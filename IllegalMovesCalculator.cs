@@ -34,7 +34,7 @@ public class IllegalMovesCalculator
                 {
                     continue; //five in a row has priority over 3x3 or 4x4, but not overline
                 }
-                else if (CountOpenThrees(x, y) >= 1)
+                else if (CountOpenThrees(x, y) >= 2)
                 {
                     illegalPoints.Add(new IllegalMove(Point.At(x, y), IllegalMoveReason.Double3));
                 }
@@ -263,6 +263,20 @@ public class IllegalMovesCalculator
         }
 
         //SW NE
+        if (isOpenBBNBstartingAt(Point.At(X - 3, Y - 3), Direction.SW_NE) ||
+            isOpenBNBBstartingAt(Point.At(X - 3, Y - 3), Direction.SW_NE) ||
+            isOpenBBBstartingAt(Point.At(X - 2, Y - 2), Direction.SW_NE) ||
+            isOpenBNBBstartingAt(Point.At(X - 2, Y - 2), Direction.SW_NE) ||
+
+            isOpenBBBstartingAt(Point.At(X - 1, Y - 1), Direction.SW_NE) ||
+
+            isOpenBBNBstartingAt(Point.At(X - 1, Y - 1), Direction.SW_NE) ||
+            isOpenBBBstartingAt(Point.At(X, Y), Direction.SW_NE) ||
+            isOpenBBNBstartingAt(Point.At(X, Y), Direction.SW_NE) ||
+            isOpenBNBBstartingAt(Point.At(X, Y), Direction.SW_NE))
+        {
+            numOpenThrees++;
+        }
 
         //W E
         if (isOpenBBNBstartingAt(Point.At(X - 3, Y), Direction.W_E) ||
@@ -280,9 +294,22 @@ public class IllegalMovesCalculator
             numOpenThrees++;
         }
 
+        //NW SE
+        if (isOpenBBNBstartingAt(Point.At(X - 3, Y + 3), Direction.NW_SE) ||
+            isOpenBNBBstartingAt(Point.At(X - 3, Y + 3), Direction.NW_SE) ||
+            isOpenBBBstartingAt(Point.At(X - 2, Y + 2), Direction.NW_SE) ||
+            isOpenBNBBstartingAt(Point.At(X - 2, Y + 2), Direction.NW_SE) ||
 
+            isOpenBBBstartingAt(Point.At(X - 1, Y + 1), Direction.NW_SE) ||
 
-        //NE SW
+            isOpenBBNBstartingAt(Point.At(X - 1, Y + 1), Direction.NW_SE) ||
+            isOpenBBBstartingAt(Point.At(X, Y), Direction.NW_SE) ||
+            isOpenBBNBstartingAt(Point.At(X, Y), Direction.NW_SE) ||
+            isOpenBNBBstartingAt(Point.At(X, Y), Direction.NW_SE))
+        {
+            numOpenThrees++;
+        }
+
         return numOpenThrees;
     }
 
@@ -390,8 +417,9 @@ public class IllegalMovesCalculator
         if (dir == Direction.S_N || dir == Direction.SW_NE) deltaY = 1;
         if (dir == Direction.NW_SE) deltaY = -1;
 
-        return X - deltaX >= 0 && X + 3*deltaX < RenjuBoard.BOARD_SIZE &&
-               Y - deltaY >= 0 && Y + 3*deltaY < RenjuBoard.BOARD_SIZE;
+        return X - deltaX >= 0 && X + 3 * deltaX < RenjuBoard.BOARD_SIZE &&
+               Y - deltaY >= 0 && Y - deltaY < RenjuBoard.BOARD_SIZE &&  //need to account for Y - deltaY going to 15+ due to NW_SE direction
+               Y + 3 * deltaY >= 0 && Y + 3 * deltaY < RenjuBoard.BOARD_SIZE; //need to account for Y + 3*deltaY going to 0- due to NW_SE direction
     }
 
     private bool isSpaceAvailableForNBBBBNwithFirstBstartingAt(Point point, Direction dir)
@@ -405,7 +433,8 @@ public class IllegalMovesCalculator
         if (dir == Direction.NW_SE) deltaY = -1;
 
         return X - deltaX >= 0 && X + 4 * deltaX < RenjuBoard.BOARD_SIZE && 
-               Y - deltaY >= 0 && Y + 4 * deltaY < RenjuBoard.BOARD_SIZE;
+               Y - deltaY >= 0 && Y - deltaY < RenjuBoard.BOARD_SIZE &&
+               Y + 4*deltaY >= 0 && Y + 4*deltaY < RenjuBoard.BOARD_SIZE;
     }
 
     private bool noOverlineHazardSurroundingNBBBBNwithFirstBstartingAt(Point point, Direction dir)
