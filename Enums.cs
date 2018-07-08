@@ -27,7 +27,7 @@ public enum OccupancyState
 public enum Direction
 {
     S_N,
-    SE_NE,
+    SW_NE,
     W_E,
     NW_SE
 }

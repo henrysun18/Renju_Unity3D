@@ -16,7 +16,7 @@ public class RenjuBoard : MonoBehaviour
     public bool playerColour;
 
     public static readonly int BOARD_SIZE = 15;
-    private OccupancyState[,] board = new OccupancyState[BOARD_SIZE, BOARD_SIZE];
+    private static OccupancyState[,] board = new OccupancyState[BOARD_SIZE, BOARD_SIZE];
     private List<IllegalMove> illegalMoves = new List<IllegalMove>();
     private List<GameObject> warningObjects = new List<GameObject>();
 
@@ -53,12 +53,25 @@ Debug.Log("milliseconds used to calculate illegal moves: " + watch.ElapsedMillis
 	        }
         }
 
-        //DEBUG
-	    if (Input.GetButtonDown("Fire2"))
+        //DEBUG WITH ONLY BLACK PIECES, RECALCULATE ILLEGAL MOVES
+	    if (Input.GetButtonDown("Fire1")) 
 	    {
-	        shouldCalculateIllegalMoves = false;
-            DestroyIllegalMoveWarnings();
-	    }
+	        DestroyIllegalMoveWarnings();
+	        for (int x = 0; x < BOARD_SIZE; x++)
+	        {
+	            for (int y = 0; y < BOARD_SIZE; y++)
+	            {
+	                if (board[x, y] == OccupancyState.IllegalMove)
+	                {
+	                    SetPointOnBoardOccupancyState(Point.At(x, y), OccupancyState.None);
+	                }
+	            }
+	        }
+
+            IllegalMovesCalculator calculator = new IllegalMovesCalculator(board);
+	        illegalMoves = calculator.CalculateIllegalMoves();
+	        InstantiateIllegalMoveWarnings();
+        }
 	}
 
     void AttemptToPlaceStone(RaycastHit hit)
@@ -72,7 +85,7 @@ Debug.Log("milliseconds used to calculate illegal moves: " + watch.ElapsedMillis
             if (isBlacksTurn)
             {
                 Instantiate(blackStone, nearestGridPoint, Quaternion.identity);
-                SetPointOnBoardOccupancyState(new Point(X, Y), OccupancyState.Black);
+                SetPointOnBoardOccupancyState(Point.At(X, Y), OccupancyState.Black);
                 //shouldCalculateIllegalMoves = false;
                 //DestroyIllegalMoveWarnings();
                 if (IllegalMovesCalculator.MoveProducesFiveToWin(X, Y, OccupancyState.Black))
@@ -85,7 +98,7 @@ shouldCalculateIllegalMoves = true;
             else
             {
                 Instantiate(whiteStone, nearestGridPoint, Quaternion.identity);
-                SetPointOnBoardOccupancyState(new Point(X, Y), OccupancyState.White);
+                SetPointOnBoardOccupancyState(Point.At(X, Y), OccupancyState.White);
                 if (IllegalMovesCalculator.MoveProducesFiveToWin(X, Y, OccupancyState.White))
                 {
                     SetWinner(PlayerColour.White);
@@ -152,16 +165,13 @@ shouldCalculateIllegalMoves = true;
         }
     }
 
-    OccupancyState GetPointOnBoardOccupancyState(Point point)
+    public static OccupancyState GetPointOnBoardOccupancyState(Point point)
     {
-        if (point.X < 0 || point.Y < 0 || point.X > Math.Sqrt(board.Length) || point.Y > Math.Sqrt(board.Length))
+        if (point.X < 0 || point.Y < 0 || point.X >= BOARD_SIZE || point.Y >= BOARD_SIZE)
         {
             return OccupancyState.OutsideOfBoard;
         }
-        else
-        {
-            return board[point.X, point.Y];
-        }
+        return board[point.X, point.Y];
     }
 
     void SetPointOnBoardOccupancyState(Point point, OccupancyState state)

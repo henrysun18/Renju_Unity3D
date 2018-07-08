@@ -2,11 +2,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 public class IllegalMovesCalculator
 {
     private static OccupancyState[,] board;
     private List<IllegalMove> illegalPoints;
+    private Point currentPointBeingChecked;
 
     public IllegalMovesCalculator(OccupancyState[,] b)
     {
@@ -20,23 +22,25 @@ public class IllegalMovesCalculator
         {
             for (int y = 0; y < RenjuBoard.BOARD_SIZE; y++)
             {
-                if (board[x, y] != OccupancyState.None) continue; //can't move to an occupied position
-                
+                currentPointBeingChecked = Point.At(x, y);
+
+                if (board[x, y] == OccupancyState.Black || board[x, y] == OccupancyState.White) continue; //can't move to an occupied position
+
                 if (MoveProducesOverline(x, y))
                 {
-                    illegalPoints.Add(new IllegalMove(new Point(x, y), IllegalMoveReason.Overline));
-                } 
+                    illegalPoints.Add(new IllegalMove(Point.At(x, y), IllegalMoveReason.Overline));
+                }
                 else if (MoveProducesFiveToWin(x, y, OccupancyState.Black))
                 {
                     continue; //five in a row has priority over 3x3 or 4x4, but not overline
                 }
-                else if(CountOpenThrees(x, y) >= 1)
+                else if (CountOpenThrees(x, y) >= 1)
                 {
-                    illegalPoints.Add(new IllegalMove(new Point(x, y), IllegalMoveReason.Double3));
+                    illegalPoints.Add(new IllegalMove(Point.At(x, y), IllegalMoveReason.Double3));
                 }
                 else if (CountOpenFours(x, y) >= 1)
                 {
-                    illegalPoints.Add(new IllegalMove(new Point(x, y), IllegalMoveReason.Double4));
+                    illegalPoints.Add(new IllegalMove(Point.At(x, y), IllegalMoveReason.Double4));
                 }
             }
         }
@@ -52,7 +56,8 @@ public class IllegalMovesCalculator
         startingYIndexOfCheck = Y - 4;
         for (int y = startingYIndexOfCheck; y < startingYIndexOfCheck + 4; y++)
         {
-            if (y < 0 || y > RenjuBoard.BOARD_SIZE - 6) {
+            if (y < 0 || y > RenjuBoard.BOARD_SIZE - 6)
+            {
                 continue; //if board is 15x15, ensure start is between 0 and 9
             }
 
@@ -99,9 +104,9 @@ public class IllegalMovesCalculator
             if (x < 0 || x > RenjuBoard.BOARD_SIZE - 6)
             {
                 continue;
-            } 
+            }
 
-            for (int i = 0; i < 6; i++) 
+            for (int i = 0; i < 6; i++)
             {
                 int xIndexToCheck = x + i;
                 if (board[xIndexToCheck, Y] != OccupancyState.Black && xIndexToCheck != X)
@@ -240,45 +245,191 @@ public class IllegalMovesCalculator
     private int CountOpenThrees(int X, int Y)
     {
         int numOpenThrees = 0;
-        int startingXIndexOfCheck, startingYIndexOfCheck;
 
         //S N
+        if (isOpenBBNBstartingAt(Point.At(X, Y - 3), Direction.S_N) ||
+            isOpenBNBBstartingAt(Point.At(X, Y - 3), Direction.S_N) ||
+            isOpenBBBstartingAt(Point.At(X, Y - 2), Direction.S_N) ||
+            isOpenBNBBstartingAt(Point.At(X, Y - 2), Direction.S_N) ||
 
+            isOpenBBBstartingAt(Point.At(X, Y - 1), Direction.S_N) ||
 
+            isOpenBBNBstartingAt(Point.At(X, Y - 1), Direction.S_N) ||
+            isOpenBBBstartingAt(Point.At(X, Y), Direction.S_N) ||
+            isOpenBBNBstartingAt(Point.At(X, Y), Direction.S_N) ||
+            isOpenBNBBstartingAt(Point.At(X, Y), Direction.S_N))
+        {
+            numOpenThrees++;
+        }
 
         //SW NE
 
         //W E
-        //if (X-3, X-2 are black and X-4, X-1, X+1 are empty OR X-3, X-1 are black and X-4, X-2, X+1 are empty)
-        if (X-4 >= 0 && X+1 < RenjuBoard.BOARD_SIZE && 
-            (board[X - 3, Y] == OccupancyState.Black && board[X - 2, Y] == OccupancyState.Black &&
-            board[X - 4, Y] == OccupancyState.None && board[X - 1, Y] == OccupancyState.None && board[X + 1, Y] == OccupancyState.None ||
-            board[X - 3, Y] == OccupancyState.Black && board[X - 1, Y] == OccupancyState.Black &&
-            board[X - 4, Y] == OccupancyState.None && board[X - 2, Y] == OccupancyState.None && board[X + 1, Y] == OccupancyState.None))
-        {
-            //  if (X-5 is on board)
-            //      if (X-5 is black) then do nothing
-            //  if (X+2 is on board)
-            //      if  (X+2 is black) then do nothing
-            //  numOpenThrees++; //no overline hazard! gj for making it here
-            if (X - 5 >= 0 && board[X - 5, Y] == OccupancyState.Black) ;
-            else if (X + 2 < RenjuBoard.BOARD_SIZE && board[X + 2, Y] == OccupancyState.Black) ;
-            else
-            {
-                numOpenThrees++;
-            }
-        }
-        else if (X-3 >= 0 && X+1 < RenjuBoard.BOARD_SIZE && 
-                 board[X-2, Y] == OccupancyState.Black && board[X-1, Y] == OccupancyState.Black &&
-                 board[X-3, Y] == OccupancyState.None && board[X+1, Y] == OccupancyState.None)
-        {
-            //if (X-4 >= 0 && board[X-4, Y] )
-        }
+        if (isOpenBBNBstartingAt(Point.At(X - 3, Y), Direction.W_E) ||
+            isOpenBNBBstartingAt(Point.At(X - 3, Y), Direction.W_E) ||
+            isOpenBBBstartingAt(Point.At(X - 2, Y), Direction.W_E) ||
+            isOpenBNBBstartingAt(Point.At(X - 2, Y), Direction.W_E) ||
             
+            isOpenBBBstartingAt(Point.At(X - 1, Y), Direction.W_E) ||
+            
+            isOpenBBNBstartingAt(Point.At(X - 1, Y), Direction.W_E) ||
+            isOpenBBBstartingAt(Point.At(X, Y), Direction.W_E) ||
+            isOpenBBNBstartingAt(Point.At(X, Y), Direction.W_E) ||
+            isOpenBNBBstartingAt(Point.At(X, Y), Direction.W_E))
+        {
+            numOpenThrees++;
+        }
+
 
 
         //NE SW
         return numOpenThrees;
+    }
+
+    private bool isOpenBBNBstartingAt(Point point, Direction dir)
+    {
+        int X = point.X;
+        int Y = point.Y;
+
+        Point OneBefore = point.GetPointNStepsAfter(-1, dir);
+        Point OneAfter = point.GetPointNStepsAfter(1, dir);
+        Point TwoAfter = point.GetPointNStepsAfter(2, dir);
+        Point ThreeAfter = point.GetPointNStepsAfter(3, dir);
+        Point FourAfter = point.GetPointNStepsAfter(4, dir);
+
+        if (isSpaceAvailableForNBBBBNwithFirstBstartingAt(point, dir) &&
+            (board[X, Y] == OccupancyState.Black || X == currentPointBeingChecked.X && Y == currentPointBeingChecked.Y)  &&
+            (board[OneAfter.X, OneAfter.Y] == OccupancyState.Black || OneAfter.X == currentPointBeingChecked.X && OneAfter.Y == currentPointBeingChecked.Y) &&
+            (board[ThreeAfter.X, ThreeAfter.Y] == OccupancyState.Black || ThreeAfter.X == currentPointBeingChecked.X && ThreeAfter.Y == currentPointBeingChecked.Y) &&
+             board[OneBefore.X, OneBefore.Y] == OccupancyState.None && 
+             board[TwoAfter.X, TwoAfter.Y] == OccupancyState.None && 
+             board[FourAfter.X, FourAfter.Y] == OccupancyState.None)
+        {
+            if (noOverlineHazardSurroundingNBBBBNwithFirstBstartingAt(point, dir))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool isOpenBNBBstartingAt(Point point, Direction dir)
+    {
+        int X = point.X;
+        int Y = point.Y;
+
+        Point OneBefore = point.GetPointNStepsAfter(-1, dir);
+        Point OneAfter = point.GetPointNStepsAfter(1, dir);
+        Point TwoAfter = point.GetPointNStepsAfter(2, dir);
+        Point ThreeAfter = point.GetPointNStepsAfter(3, dir);
+        Point FourAfter = point.GetPointNStepsAfter(4, dir);
+
+        if (isSpaceAvailableForNBBBBNwithFirstBstartingAt(point, dir) &&
+            (board[X, Y] == OccupancyState.Black || X == currentPointBeingChecked.X && Y == currentPointBeingChecked.Y) &&
+            (board[TwoAfter.X, TwoAfter.Y] == OccupancyState.Black || TwoAfter.X == currentPointBeingChecked.X && TwoAfter.Y == currentPointBeingChecked.Y) &&
+            (board[ThreeAfter.X, ThreeAfter.Y] == OccupancyState.Black || ThreeAfter.X == currentPointBeingChecked.X && ThreeAfter.Y == currentPointBeingChecked.Y) &&
+             board[OneBefore.X, OneBefore.Y] == OccupancyState.None && 
+             board[OneAfter.X, OneAfter.Y] == OccupancyState.None && 
+             board[FourAfter.X, FourAfter.Y] == OccupancyState.None)
+        {
+            if (noOverlineHazardSurroundingNBBBBNwithFirstBstartingAt(point, dir))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool isOpenBBBstartingAt(Point point, Direction dir)
+    {
+        int X = point.X;
+        int Y = point.Y;
+
+        Point OneBefore = point.GetPointNStepsAfter(-1, dir);
+        Point TwoBefore = point.GetPointNStepsAfter(-2, dir);
+        Point OneAfter = point.GetPointNStepsAfter(1, dir);
+        Point TwoAfter = point.GetPointNStepsAfter(2, dir);
+        Point ThreeAfter = point.GetPointNStepsAfter(3, dir);
+        Point FourAfter = point.GetPointNStepsAfter(4, dir);
+
+        if (isSpaceAvailableForNBBBNwithFirstBstartingAt(point, dir) &&
+            (board[X, Y] == OccupancyState.Black || X == currentPointBeingChecked.X && Y == currentPointBeingChecked.Y) && 
+            (board[OneAfter.X, OneAfter.Y] == OccupancyState.Black || OneAfter.X == currentPointBeingChecked.X && OneAfter.Y == currentPointBeingChecked.Y) && 
+            (board[TwoAfter.X, TwoAfter.Y] == OccupancyState.Black || TwoAfter.X == currentPointBeingChecked.X && TwoAfter.Y == currentPointBeingChecked.Y) &&
+             board[OneBefore.X, OneBefore.Y] == OccupancyState.None && 
+             board[ThreeAfter.X, ThreeAfter.Y] == OccupancyState.None)
+        {
+            if (RenjuBoard.GetPointOnBoardOccupancyState(FourAfter) == OccupancyState.None) //check if open 4 can be made by assuming black piece appended to tail of open 3
+            {
+                if (noOverlineHazardSurroundingNBBBBNwithFirstBstartingAt(point, dir))
+                {
+                    return true;
+                }
+            }
+            if (RenjuBoard.GetPointOnBoardOccupancyState(TwoBefore) == OccupancyState.None) //check if open 4 can be made by assuming black piece appended to head of open 3
+            {
+                if (noOverlineHazardSurroundingNBBBBNwithFirstBstartingAt(OneBefore, dir))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private bool isSpaceAvailableForNBBBNwithFirstBstartingAt(Point point, Direction dir)
+    {
+        int X = point.X;
+        int Y = point.Y;
+
+        int deltaX = dir == Direction.S_N ? 0 : 1;
+        int deltaY = 0;
+        if (dir == Direction.S_N || dir == Direction.SW_NE) deltaY = 1;
+        if (dir == Direction.NW_SE) deltaY = -1;
+
+        return X - deltaX >= 0 && X + 3*deltaX < RenjuBoard.BOARD_SIZE &&
+               Y - deltaY >= 0 && Y + 3*deltaY < RenjuBoard.BOARD_SIZE;
+    }
+
+    private bool isSpaceAvailableForNBBBBNwithFirstBstartingAt(Point point, Direction dir)
+    {
+        int X = point.X;
+        int Y = point.Y;
+
+        int deltaX = dir == Direction.S_N ? 0 : 1;
+        int deltaY = 0;
+        if (dir == Direction.S_N || dir == Direction.SW_NE) deltaY = 1;
+        if (dir == Direction.NW_SE) deltaY = -1;
+
+        return X - deltaX >= 0 && X + 4 * deltaX < RenjuBoard.BOARD_SIZE && 
+               Y - deltaY >= 0 && Y + 4 * deltaY < RenjuBoard.BOARD_SIZE;
+    }
+
+    private bool noOverlineHazardSurroundingNBBBBNwithFirstBstartingAt(Point point, Direction dir)
+    {
+        int X = point.X;
+        int Y = point.Y;
+
+        Point TwoBefore = point.GetPointNStepsAfter(-2, dir);
+        Point FiveAfter = point.GetPointNStepsAfter(5, dir);
+        //  if (2 before is on board)
+        //      if (2 before is black) then do nothing
+        //  if (5 after is on board)
+        //      if  (5 after is black) then do nothing
+        //  numOpenThrees++; //no overline hazard! gj for making it here
+        if (RenjuBoard.GetPointOnBoardOccupancyState(Point.At(TwoBefore.X, TwoBefore.Y)) == OccupancyState.Black)
+        {
+            return false; //3 return statements to make this logic easier to read
+        }
+        if (RenjuBoard.GetPointOnBoardOccupancyState(Point.At(FiveAfter.X, FiveAfter.Y)) == OccupancyState.Black)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     private int CountOpenFours(int X, int Y)
@@ -287,17 +438,6 @@ public class IllegalMovesCalculator
     }
 }
 
-public struct IllegalMove
-{
-    public IllegalMove(Point p, IllegalMoveReason r) : this()
-    {
-        point = p;
-        reason = r;
-    }
 
-    public Point point { get; private set; }
-
-    public IllegalMoveReason reason { get; private set; }
-}
 
 
