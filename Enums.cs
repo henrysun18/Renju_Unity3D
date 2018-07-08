@@ -31,3 +31,9 @@ public enum Direction
     W_E,
     NW_SE
 }
+
+public enum HalfOpenConfig
+{
+    NBBBN,
+    NBBBBN
+}

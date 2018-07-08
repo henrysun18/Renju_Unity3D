@@ -21,6 +21,11 @@ public struct Point
         return new Point(x, y);
     }
 
+    public bool Equals(Point anotherPoint)
+    {
+        return X == anotherPoint.X && Y == anotherPoint.Y;
+    }
+
     public Point GetPointNStepsAfter(int steps, Direction dir)
     {
         int deltaX = 0;

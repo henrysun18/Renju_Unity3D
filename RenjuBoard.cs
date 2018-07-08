@@ -42,7 +42,7 @@ Debug.Log("milliseconds used to calculate illegal moves: " + watch.ElapsedMillis
 	        shouldCalculateIllegalMoves = false;
 	    }
 
-	    if (Input.GetButtonDown("Fire1"))
+        if (Input.GetButtonDown("Fire1"))
 	    {
 	        Ray ray = computerPlayerCamera.ScreenPointToRay(Input.mousePosition);
 	        RaycastHit hit;
@@ -53,9 +53,10 @@ Debug.Log("milliseconds used to calculate illegal moves: " + watch.ElapsedMillis
 	        }
         }
 
-        //DEBUG WITH ONLY BLACK PIECES, RECALCULATE ILLEGAL MOVES
-	    if (Input.GetButtonDown("Fire1")) 
+	    //DEBUG WITH ONLY BLACK PIECES, RECALCULATE ILLEGAL MOVES AFTER EACH MOVE
+	    /*if (Input.GetButtonDown("Fire1"))
 	    {
+	        isBlacksTurn = true;
 	        DestroyIllegalMoveWarnings();
 	        for (int x = 0; x < BOARD_SIZE; x++)
 	        {
@@ -68,11 +69,11 @@ Debug.Log("milliseconds used to calculate illegal moves: " + watch.ElapsedMillis
 	            }
 	        }
 
-            IllegalMovesCalculator calculator = new IllegalMovesCalculator(board);
+	        IllegalMovesCalculator calculator = new IllegalMovesCalculator(board);
 	        illegalMoves = calculator.CalculateIllegalMoves();
 	        InstantiateIllegalMoveWarnings();
-        }
-	}
+	    }*/
+    }
 
     void AttemptToPlaceStone(RaycastHit hit)
     {
@@ -86,14 +87,12 @@ Debug.Log("milliseconds used to calculate illegal moves: " + watch.ElapsedMillis
             {
                 Instantiate(blackStone, nearestGridPoint, Quaternion.identity);
                 SetPointOnBoardOccupancyState(Point.At(X, Y), OccupancyState.Black);
-                //shouldCalculateIllegalMoves = false;
-                //DestroyIllegalMoveWarnings();
+                DestroyIllegalMoveWarnings();
                 if (IllegalMovesCalculator.MoveProducesFiveToWin(X, Y, OccupancyState.Black))
                 {
                     SetWinner(PlayerColour.Black);
                     return;
                 }
-shouldCalculateIllegalMoves = true;
             }
             else
             {
@@ -104,11 +103,10 @@ shouldCalculateIllegalMoves = true;
                     SetWinner(PlayerColour.White);
                     return;
                 }
-
-                shouldCalculateIllegalMoves = true; //recalculate only once the board is updated with new move (not every frame)
             }
 
-            //isBlacksTurn = !isBlacksTurn; //next guy's turn
+            isBlacksTurn = !isBlacksTurn; //next guy's turn
+            if (isBlacksTurn) shouldCalculateIllegalMoves = true;
         }
     }
 
