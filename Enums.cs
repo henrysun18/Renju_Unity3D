@@ -8,6 +8,12 @@ public enum PlayerColour
     White
 }
 
+public enum PlayerNumber
+{
+    One,
+    Two
+}
+
 public enum IllegalMoveReason
 {
     Double3,

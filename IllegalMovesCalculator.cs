@@ -606,7 +606,3 @@ public class IllegalMovesCalculator
 
     #endregion
 }
-
-
-
-

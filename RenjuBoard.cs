@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class RenjuBoard : MonoBehaviour
 {
@@ -13,7 +15,6 @@ public class RenjuBoard : MonoBehaviour
     public GameObject OverlineWarning;
     public GameObject BlackWinMessage;
     public GameObject WhiteWinMessage;
-    public bool playerColour;
 
     public static readonly int BOARD_SIZE = 15;
     private static OccupancyState[,] board = new OccupancyState[BOARD_SIZE, BOARD_SIZE];
@@ -23,35 +24,35 @@ public class RenjuBoard : MonoBehaviour
     private bool isBlacksTurn = true;
     private bool shouldCalculateIllegalMoves = true; //so we don't calculate illegal moves every frame
 
+
     // Use this for initialization
     void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
+        JsonConvert.DefaultSettings = () => new JsonSerializerSettings
+        {
+            NullValueHandling = NullValueHandling.Ignore, //need to be able to update some properties of RoomDto without overwriting others
+        };
+        InvokeRepeating("SyncGameWithDB", 0.5f, 1f); //0.5s delay, repeat every 1s
+    }
+
+    void SyncGameWithDB()
+    {
+        StartCoroutine(FirebaseDao.GetRoomInfo());
+    }
+
+    // Update is called once per frame
+    void Update () {
+
 	    if (shouldCalculateIllegalMoves)
 	    {
-var watch = System.Diagnostics.Stopwatch.StartNew();
+            var watch = System.Diagnostics.Stopwatch.StartNew();
             IllegalMovesCalculator calculator = new IllegalMovesCalculator(board);
 	        illegalMoves = calculator.CalculateIllegalMoves();
-watch.Stop();
-Debug.Log("milliseconds used to calculate illegal moves: " + watch.ElapsedMilliseconds);
+            watch.Stop();
+            Debug.Log("milliseconds used to calculate illegal moves: " + watch.ElapsedMilliseconds);
 
 	        InstantiateIllegalMoveWarnings();
 	        shouldCalculateIllegalMoves = false;
 	    }
-
-        if (Input.GetButtonDown("Fire1"))
-	    {
-	        Ray ray = computerPlayerCamera.ScreenPointToRay(Input.mousePosition);
-	        RaycastHit hit;
-
-            if (Physics.Raycast(ray, out hit, 50))
-            {
-                AttemptToPlaceStone(hit);
-	        }
-        }
 
 	    //DEBUG WITH ONLY BLACK PIECES, RECALCULATE ILLEGAL MOVES AFTER EACH MOVE
 	    /*if (Input.GetButtonDown("Fire1"))
@@ -75,47 +76,77 @@ Debug.Log("milliseconds used to calculate illegal moves: " + watch.ElapsedMillis
 	    }*/
     }
 
-    void AttemptToPlaceStone(RaycastHit hit)
+    void OnMouseDown()
     {
-        Vector3 nearestGridPoint = CalculateNearestGridPoint(hit);
-        int X = (int)Math.Round(nearestGridPoint.x);
-        int Y = (int)Math.Round(nearestGridPoint.z);
+        //ONLINE MULTIPLAYER
+        if (FirebaseDao.IsMyTurn())
+        {
+            AttemptToPlaceStone(FirebaseDao.GetOpponentsLastMove());
 
-        if (board[X, Y] == OccupancyState.None)
+            Ray ray = computerPlayerCamera.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+
+            if (Physics.Raycast(ray, out hit, 50))
+            {
+                Point myMove = CalculateNearestGridPoint(hit);
+                bool isMovePlacedSuccessfully = AttemptToPlaceStone(myMove);
+                if (isMovePlacedSuccessfully)
+                {
+                    StartCoroutine(FirebaseDao.SetTurnOverAfterMyMove(myMove));
+                }
+            }
+        }
+
+        //LOCAL
+        /*Ray ray = computerPlayerCamera.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit;
+
+        if (Physics.Raycast(ray, out hit, 50))
+        {
+            AttemptToPlaceStone(hit);
+        }*/
+    }
+
+    bool AttemptToPlaceStone(Point gridPoint)
+    {
+        Vector3 worldVector = new Vector3(gridPoint.X, 0, gridPoint.Y);
+
+        if (GetPointOnBoardOccupancyState(gridPoint) == OccupancyState.None)
         {
             if (isBlacksTurn)
             {
-                Instantiate(blackStone, nearestGridPoint, Quaternion.identity);
-                SetPointOnBoardOccupancyState(Point.At(X, Y), OccupancyState.Black);
+                Instantiate(blackStone, worldVector, Quaternion.identity);
+                SetPointOnBoardOccupancyState(gridPoint, OccupancyState.Black);
                 DestroyIllegalMoveWarnings();
-                if (IllegalMovesCalculator.MoveProducesFiveToWin(X, Y, OccupancyState.Black))
+                if (IllegalMovesCalculator.MoveProducesFiveToWin(gridPoint.X, gridPoint.Y, OccupancyState.Black))
                 {
                     SetWinner(PlayerColour.Black);
-                    return;
                 }
             }
             else
             {
-                Instantiate(whiteStone, nearestGridPoint, Quaternion.identity);
-                SetPointOnBoardOccupancyState(Point.At(X, Y), OccupancyState.White);
-                if (IllegalMovesCalculator.MoveProducesFiveToWin(X, Y, OccupancyState.White))
+                Instantiate(whiteStone, worldVector, Quaternion.identity);
+                SetPointOnBoardOccupancyState(gridPoint, OccupancyState.White);
+                if (IllegalMovesCalculator.MoveProducesFiveToWin(gridPoint.X, gridPoint.Y, OccupancyState.White))
                 {
                     SetWinner(PlayerColour.White);
-                    return;
                 }
             }
 
             isBlacksTurn = !isBlacksTurn; //next guy's turn
             if (isBlacksTurn) shouldCalculateIllegalMoves = true;
+
+            return true; //successfully placed stone
         }
+
+        return false;
     }
 
-    Vector3 CalculateNearestGridPoint(RaycastHit hit)
+    Point CalculateNearestGridPoint(RaycastHit hit)
     {
-        float nearestGridPointX = (float)Math.Round((decimal)hit.point.x, MidpointRounding.ToEven);
-        float nearestGridPointY = (float)Math.Round((decimal)hit.point.y, MidpointRounding.ToEven);
-        float nearestGridPointZ = (float)Math.Round((decimal)hit.point.z, MidpointRounding.ToEven);
-        return new Vector3(nearestGridPointX, nearestGridPointY, nearestGridPointZ);
+        int X = (int)Math.Round(hit.point.x);
+        int Y = (int)Math.Round(hit.point.z);
+        return Point.At(X, Y);
     }
 
     void InstantiateIllegalMoveWarnings()
