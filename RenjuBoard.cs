@@ -16,12 +16,12 @@ public class RenjuBoard : MonoBehaviour
     public GameObject BlackWinMessage;
     public GameObject WhiteWinMessage;
 
+    public static bool isBlacksTurn = true;
     public static readonly int BOARD_SIZE = 15;
     private static OccupancyState[,] board = new OccupancyState[BOARD_SIZE, BOARD_SIZE];
     private List<IllegalMove> illegalMoves = new List<IllegalMove>();
     private List<GameObject> warningObjects = new List<GameObject>();
 
-    private bool isBlacksTurn = true;
     private bool shouldCalculateIllegalMoves = true; //so we don't calculate illegal moves every frame
 
 
@@ -31,12 +31,19 @@ public class RenjuBoard : MonoBehaviour
         {
             NullValueHandling = NullValueHandling.Ignore, //need to be able to update some properties of RoomDto without overwriting others
         };
-        InvokeRepeating("SyncGameWithDB", 0.5f, 1f); //0.5s delay, repeat every 1s
+        InvokeRepeating("SyncGameWithDB", 0.2f, 0.5f); //0.2s delay, repeat every 0.5s
     }
 
     void SyncGameWithDB()
     {
         StartCoroutine(FirebaseDao.GetRoomInfo());
+        if (FirebaseDao.IsOpponentDoneChoosingAMove())
+        {
+            AttemptToPlaceStone(FirebaseDao.GetOpponentsLastMove());
+        }
+
+        GameObject.Find("P1Label").GetComponent<TextMesh>().text = "P1: " + FirebaseDao.OnlineRoomInfo.Player1;
+        GameObject.Find("P2Label").GetComponent<TextMesh>().text = "P2: " + FirebaseDao.OnlineRoomInfo.Player2;
     }
 
     // Update is called once per frame
@@ -81,8 +88,6 @@ public class RenjuBoard : MonoBehaviour
         //ONLINE MULTIPLAYER
         if (FirebaseDao.IsMyTurn())
         {
-            AttemptToPlaceStone(FirebaseDao.GetOpponentsLastMove());
-
             Ray ray = computerPlayerCamera.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
 

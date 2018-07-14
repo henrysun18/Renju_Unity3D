@@ -9,9 +9,9 @@ using UnityEngine.UI;
 
 public class FirebaseDao : MonoBehaviour
 {
-    public static string OnlineRoomName = "23333";
+    public static string OnlineRoomName = "";
     public static PlayerNumber OnlinePlayerNumber = PlayerNumber.One;
-    public static RoomDto OnlineRoomInfo;
+    public static RoomDto OnlineRoomInfo = new RoomDto();
 
     private static string PATCH_PARAM = "?x-http-method-override=PATCH";
     private static string POST_PARAM = "?x-http-method-override=POST";
@@ -26,9 +26,24 @@ public class FirebaseDao : MonoBehaviour
     {
         OnlineRoomName = roomName;
         OnlinePlayerNumber = playerNumber;
-        OnlineRoomInfo = playerNumber == PlayerNumber.One
-            ? new RoomDto {Player1 = playerName, Player2 = "placeholder", IsBlacksTurn = true, LastMoveByWhite = Point.At(999, 999), LastMoveByBlack = Point.At(999, 999)}
-            : new RoomDto {Player2 = playerName, IsBlacksTurn = true, LastMoveByWhite = Point.At(999, 999), LastMoveByBlack = Point.At(999, 999)};
+        if (playerNumber == PlayerNumber.One)
+        {
+            OnlineRoomInfo = new RoomDto
+            {
+                Player1 = playerName,
+                IsBlacksTurn = true,
+                OpponentsLastMove = Point.At(-1, -1)
+            };
+        }
+        else
+        {
+            OnlineRoomInfo = new RoomDto
+            {
+                Player2 = playerName,
+                IsBlacksTurn = true,
+                OpponentsLastMove = Point.At(-1, -1)
+            };
+        }
 
         string data = JsonConvert.SerializeObject(OnlineRoomInfo);
         byte[] rawData = Encoding.ASCII.GetBytes(data);
@@ -44,39 +59,22 @@ public class FirebaseDao : MonoBehaviour
         using (WWW www = new WWW(roomsListUrl + OnlineRoomName + ".json" + GET_PARAM))
         {
             yield return www;
-            OnlineRoomInfo = JsonConvert.DeserializeObject<RoomDto>(www.text);
-
-            Text P1Label = GameObject.FindGameObjectWithTag("P1Label").GetComponent<Text>();
-            P1Label.text = "P1: " + OnlineRoomInfo.Player1;
-
-            Text P2Label = GameObject.FindGameObjectWithTag("P2Label").GetComponent<Text>();
-            P2Label.text = "P2: " + OnlineRoomInfo.Player2;
+            if (www.isDone)
+            {
+                OnlineRoomInfo = JsonConvert.DeserializeObject<RoomDto>(www.text);
+            }
         }
-
-        
     }
 
     public static IEnumerator SetTurnOverAfterMyMove(Point myMove)
     {
-        RoomDto roomDto;
-        if (OnlinePlayerNumber == PlayerNumber.One)
+        RoomDto roomDto = new RoomDto
         {
-            roomDto = new RoomDto
-            {
-                LastMoveByBlack = myMove,
-                IsBlacksTurn = false,
-                IsWhitesTurn = true
-            };
-        }
-        else
-        {
-            roomDto = new RoomDto
-            {
-                LastMoveByWhite = myMove,
-                IsBlacksTurn = true,
-                IsWhitesTurn = false
-            };
-        }
+            OpponentsLastMove = myMove,
+            IsBlacksTurn = OnlinePlayerNumber != PlayerNumber.One, //if we are black and just moved, then notify that it's white's turn
+            IsWhitesTurn = OnlinePlayerNumber == PlayerNumber.One
+        };
+
         string data = JsonConvert.SerializeObject(roomDto);
         byte[] rawData = Encoding.ASCII.GetBytes(data);
 
@@ -88,12 +86,18 @@ public class FirebaseDao : MonoBehaviour
 
     public static bool IsMyTurn()
     {
-        return OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.One) ||
-               OnlineRoomInfo.IsWhitesTurn && OnlinePlayerNumber.Equals(PlayerNumber.Two);
+        return OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.One) && RenjuBoard.isBlacksTurn || //previously white's turn
+               OnlineRoomInfo.IsWhitesTurn && OnlinePlayerNumber.Equals(PlayerNumber.Two) && !RenjuBoard.isBlacksTurn; //need to simulate other player's move first
+    }
+
+    public static bool IsOpponentDoneChoosingAMove()
+    {
+        return OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.One) && !RenjuBoard.isBlacksTurn || //previously white's turn
+               OnlineRoomInfo.IsWhitesTurn && OnlinePlayerNumber.Equals(PlayerNumber.Two) && RenjuBoard.isBlacksTurn; //need to simulate other player's move first
     }
 
     public static Point GetOpponentsLastMove()
     {
-        return OnlineRoomInfo.IsBlacksTurn ? OnlineRoomInfo.LastMoveByWhite : OnlineRoomInfo.LastMoveByBlack;
+        return OnlineRoomInfo.OpponentsLastMove;
     }
 }

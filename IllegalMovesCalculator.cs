@@ -576,6 +576,13 @@ public class IllegalMovesCalculator
         Point ThreeAfter = point.GetPointNStepsAfter(3, dir);
         Point FourAfter = point.GetPointNStepsAfter(4, dir);
 
+        if (RenjuBoard.GetPointOnBoardOccupancyState(OneAfter) == OccupancyState.White ||
+            RenjuBoard.GetPointOnBoardOccupancyState(TwoAfter) == OccupancyState.White ||
+            RenjuBoard.GetPointOnBoardOccupancyState(ThreeAfter) == OccupancyState.White)
+        {
+            return false;
+        }
+
         if (RenjuBoard.GetPointOnBoardOccupancyState(point) == OccupancyState.Black || currentPointBeingChecked.Equals(point))
         {
             numBlackPiecesFound++;
