@@ -86,14 +86,14 @@ public class FirebaseDao : MonoBehaviour
 
     public static bool IsMyTurn()
     {
-        return OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.One) && RenjuBoard.isBlacksTurn || //previously white's turn
-               OnlineRoomInfo.IsWhitesTurn && OnlinePlayerNumber.Equals(PlayerNumber.Two) && !RenjuBoard.isBlacksTurn; //need to simulate other player's move first
+        return OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.One) && RenjuBoard.IsBlacksTurn || //previously white's turn
+               OnlineRoomInfo.IsWhitesTurn && OnlinePlayerNumber.Equals(PlayerNumber.Two) && !RenjuBoard.IsBlacksTurn; //need to simulate other player's move first
     }
 
     public static bool IsOpponentDoneChoosingAMove()
     {
-        return OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.One) && !RenjuBoard.isBlacksTurn || //previously white's turn
-               OnlineRoomInfo.IsWhitesTurn && OnlinePlayerNumber.Equals(PlayerNumber.Two) && RenjuBoard.isBlacksTurn; //need to simulate other player's move first
+        return OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.One) && !RenjuBoard.IsBlacksTurn || //previously white's turn
+               OnlineRoomInfo.IsWhitesTurn && OnlinePlayerNumber.Equals(PlayerNumber.Two) && RenjuBoard.IsBlacksTurn; //need to simulate other player's move first
     }
 
     public static Point GetOpponentsLastMove()
