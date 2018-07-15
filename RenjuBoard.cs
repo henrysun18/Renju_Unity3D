@@ -11,9 +11,8 @@ public class RenjuBoard : MonoBehaviour
     
 
     public static bool IsDebugModeWithOnlyBlackPieces = false;
-    public static bool IsOnlineGame = false;
+    public static bool IsOnlineGame = true;
     public static bool IsGameOver = false;
-    public static bool IsCurrentlyProcessingUndoRequest = false;
     public static bool IsBlacksTurn = true;
     public static readonly int BOARD_SIZE = 15;
 
@@ -45,16 +44,16 @@ public class RenjuBoard : MonoBehaviour
     {
         StartCoroutine(FirebaseDao.GetRoomInfo());
 
-        if (FirebaseDao.IsOpponentDoneChoosingAMove() && !IsCurrentlyProcessingUndoRequest)
+        if (FirebaseDao.IsUndoButtonUnacknowledged())
         {
-            AttemptToPlaceStone(FirebaseDao.GetOpponentsLastMove());
-        }
-        else if (FirebaseDao.IsUndoButtonPressedByOpponent() && !IsCurrentlyProcessingUndoRequest)
-        {
-            IsCurrentlyProcessingUndoRequest = true;
             OnUndoButtonPress();
             StartCoroutine(FirebaseDao.ConfirmUndoRequest());
         }
+        else if (FirebaseDao.IsOpponentDoneChoosingAMove())
+        {
+            AttemptToPlaceStone(FirebaseDao.GetOpponentsLastMove());
+        }
+        
 
         GameObject.Find(GameConstants.P1_LABEL_GAMEOBJECT).GetComponent<Text>().text = "P1: " + FirebaseDao.OnlineRoomInfo.Player1;
         GameObject.Find(GameConstants.P2_LABEL_GAMEOBJECT).GetComponent<Text>().text = "P2: " + FirebaseDao.OnlineRoomInfo.Player2;
@@ -101,6 +100,11 @@ public class RenjuBoard : MonoBehaviour
 
     void OnUndoButtonPress()
     {
+        if (IsOnlineGame && !FirebaseDao.IsUndoButtonUnacknowledged())
+        {
+            StartCoroutine(FirebaseDao.PressUndoButton());
+        }
+
         Stone stoneToUndo = MovesHistory.Pop();
 
         Destroy(stoneToUndo.stone);
@@ -111,11 +115,6 @@ public class RenjuBoard : MonoBehaviour
         {
             IllegalMovesController.DestroyIllegalMoveWarnings();
             IllegalMovesController.ShowIllegalMoves();
-        }
-
-        if (IsOnlineGame)
-        {
-            StartCoroutine(FirebaseDao.SetTurnOverAfterPressingUndoButton());
         }
     }
 
@@ -209,7 +208,6 @@ public class RenjuBoard : MonoBehaviour
     {
         IllegalMovesController.DestroyIllegalMoveWarnings();
         Board = new OccupancyState[15,15];
-        IsCurrentlyProcessingUndoRequest = false;
         FirebaseDao.OnlineRoomInfo = null;
 
         while (MovesHistory.Count > 0) //empty the board of stones
