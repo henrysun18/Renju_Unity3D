@@ -4,9 +4,9 @@ using System.Security.Cryptography.X509Certificates;
 using UnityEngine;
 
 
-public struct IllegalMove
+public class IllegalMove
 {
-    public IllegalMove(Point p, IllegalMoveReason r) : this()
+    public IllegalMove(Point p, IllegalMoveReason r)
     {
         point = p;
         reason = r;

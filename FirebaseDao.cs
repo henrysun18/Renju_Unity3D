@@ -9,7 +9,7 @@ using UnityEngine.UI;
 
 public class FirebaseDao : MonoBehaviour
 {
-    public static string OnlineRoomName = "";
+    public static string OnlineRoomName;
     public static PlayerNumber OnlinePlayerNumber = PlayerNumber.One;
     public static RoomDto OnlineRoomInfo = new RoomDto();
 
@@ -21,7 +21,6 @@ public class FirebaseDao : MonoBehaviour
     private static string baseUrlJson = "https://henrys-firebase-db.firebaseio.com/Renju.json";
     private static string roomsUrlJson = "https://henrys-firebase-db.firebaseio.com/Renju/Rooms.json";
 
-
     public static IEnumerator JoinRoomGivenPlayerNameAndPlayerNumber(string roomName, string playerName, PlayerNumber playerNumber)
     {
         OnlineRoomName = roomName;
@@ -30,9 +29,7 @@ public class FirebaseDao : MonoBehaviour
         {
             OnlineRoomInfo = new RoomDto
             {
-                Player1 = playerName,
-                IsBlacksTurn = true,
-                OpponentsLastMove = Point.At(-1, -1)
+                Player1 = playerName //wait for p2 to arrive before IsBlacksTurn is set
             };
         }
         else
@@ -47,8 +44,7 @@ public class FirebaseDao : MonoBehaviour
 
         string data = JsonConvert.SerializeObject(OnlineRoomInfo);
         byte[] rawData = Encoding.ASCII.GetBytes(data);
-
-        using (WWW www = new WWW(roomsListUrl + roomName + ".json" + PATCH_PARAM, rawData))
+        using (WWW www = new WWW(roomsListUrl + OnlineRoomName + ".json" + PATCH_PARAM, rawData))
         {
             yield return www;
         }
@@ -72,12 +68,26 @@ public class FirebaseDao : MonoBehaviour
         {
             OpponentsLastMove = myMove,
             IsBlacksTurn = OnlinePlayerNumber != PlayerNumber.One, //if we are black and just moved, then notify that it's white's turn
-            IsWhitesTurn = OnlinePlayerNumber == PlayerNumber.One
         };
 
         string data = JsonConvert.SerializeObject(roomDto);
         byte[] rawData = Encoding.ASCII.GetBytes(data);
+        using (WWW www = new WWW(roomsListUrl + OnlineRoomName + ".json" + PATCH_PARAM, rawData))
+        {
+            yield return www;
+        }
+    }
 
+    public static IEnumerator SetTurnOverAfterPressingUndoButton()
+    {
+        RoomDto roomDto = new RoomDto
+        {
+            IsUndoButtonPressedByOpponent = true,
+            IsBlacksTurn = OnlinePlayerNumber != PlayerNumber.One,
+        };
+
+        string data = JsonConvert.SerializeObject(roomDto);
+        byte[] rawData = Encoding.ASCII.GetBytes(data);
         using (WWW www = new WWW(roomsListUrl + OnlineRoomName + ".json" + PATCH_PARAM, rawData))
         {
             yield return www;
@@ -86,18 +96,40 @@ public class FirebaseDao : MonoBehaviour
 
     public static bool IsMyTurn()
     {
-        return OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.One) && RenjuBoard.IsBlacksTurn || //previously white's turn
-               OnlineRoomInfo.IsWhitesTurn && OnlinePlayerNumber.Equals(PlayerNumber.Two) && !RenjuBoard.IsBlacksTurn; //need to simulate other player's move first
+        return OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.One) && RenjuBoard.IsBlacksTurn ||
+               !OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.Two) && !RenjuBoard.IsBlacksTurn;
     }
 
     public static bool IsOpponentDoneChoosingAMove()
     {
         return OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.One) && !RenjuBoard.IsBlacksTurn || //previously white's turn
-               OnlineRoomInfo.IsWhitesTurn && OnlinePlayerNumber.Equals(PlayerNumber.Two) && RenjuBoard.IsBlacksTurn; //need to simulate other player's move first
+               !OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.Two) && RenjuBoard.IsBlacksTurn; //need to simulate other player's move first
+    }
+
+    public static bool IsUndoButtonPressedByOpponent()
+    {
+        return OnlineRoomInfo.IsUndoButtonPressedByOpponent;
+    }
+
+    public static IEnumerator ConfirmUndoRequest()
+    {
+        RoomDto roomDto = new RoomDto
+        {
+            IsUndoButtonPressedByOpponent = false
+        };
+
+        string data = JsonConvert.SerializeObject(roomDto);
+        byte[] rawData = Encoding.ASCII.GetBytes(data);
+        using (WWW www = new WWW(roomsListUrl + OnlineRoomName + ".json" + PATCH_PARAM, rawData))
+        {
+            yield return www;
+        }
     }
 
     public static Point GetOpponentsLastMove()
     {
         return OnlineRoomInfo.OpponentsLastMove;
     }
+
+
 }

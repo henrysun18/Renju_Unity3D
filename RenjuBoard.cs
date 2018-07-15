@@ -8,22 +8,30 @@ using UnityEngine.UI;
 public class RenjuBoard : MonoBehaviour
 {
     public Camera computerPlayerCamera;
-    public GameObject blackStone;
-    public GameObject whiteStone;
     
-    public GameObject BlackWinMessage;
-    public GameObject WhiteWinMessage;
 
-    public static bool IsDebugModeWithOnlyBlackPieces = true;
-    private static bool IsMultiplayerGame = false;
+    public static bool IsDebugModeWithOnlyBlackPieces = false;
+    public static bool IsOnlineGame = false;
+    public static bool IsGameOver = false;
+    public static bool IsCurrentlyProcessingUndoRequest = false;
     public static bool IsBlacksTurn = true;
     public static readonly int BOARD_SIZE = 15;
-    private static OccupancyState[,] board = new OccupancyState[BOARD_SIZE, BOARD_SIZE];
-    
+
+    private static OccupancyState[,] Board = new OccupancyState[BOARD_SIZE, BOARD_SIZE];
+    private static Stack<Stone> MovesHistory = new Stack<Stone>();
+
+    private static GameObject BlackStone;
+    private static GameObject WhiteStone;
+    private static GameObject BlackWinMessage;
+    private static GameObject WhiteWinMessage;
 
     // Use this for initialization
     void Start () {
-        if (IsMultiplayerGame)
+        BlackStone = Resources.Load<GameObject>(GameConstants.BLACK_STONE);
+        WhiteStone = Resources.Load<GameObject>(GameConstants.WHITE_STONE);
+        GameObject.Find(GameConstants.UNDO_BUTTON_GAMEOBJECT).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
+
+        if (IsOnlineGame)
         {
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings
             {
@@ -36,18 +44,29 @@ public class RenjuBoard : MonoBehaviour
     void SyncGameWithDB()
     {
         StartCoroutine(FirebaseDao.GetRoomInfo());
-        if (FirebaseDao.IsOpponentDoneChoosingAMove())
+
+        if (FirebaseDao.IsOpponentDoneChoosingAMove() && !IsCurrentlyProcessingUndoRequest)
         {
             AttemptToPlaceStone(FirebaseDao.GetOpponentsLastMove());
         }
+        else if (FirebaseDao.IsUndoButtonPressedByOpponent() && !IsCurrentlyProcessingUndoRequest)
+        {
+            IsCurrentlyProcessingUndoRequest = true;
+            OnUndoButtonPress();
+            StartCoroutine(FirebaseDao.ConfirmUndoRequest());
+        }
 
-        GameObject.Find("P1Label").GetComponent<TextMesh>().text = "P1: " + FirebaseDao.OnlineRoomInfo.Player1;
-        GameObject.Find("P2Label").GetComponent<TextMesh>().text = "P2: " + FirebaseDao.OnlineRoomInfo.Player2;
+        GameObject.Find(GameConstants.P1_LABEL_GAMEOBJECT).GetComponent<Text>().text = "P1: " + FirebaseDao.OnlineRoomInfo.Player1;
+        GameObject.Find(GameConstants.P2_LABEL_GAMEOBJECT).GetComponent<Text>().text = "P2: " + FirebaseDao.OnlineRoomInfo.Player2;
     }
 
     void OnMouseDown()
     {
-        if (IsMultiplayerGame)
+        if (IsGameOver)
+        {
+            ResetGameState();
+        }
+        else if (IsOnlineGame)
         {
             //ONLINE MULTIPLAYER
             if (FirebaseDao.IsMyTurn())
@@ -80,15 +99,33 @@ public class RenjuBoard : MonoBehaviour
         }
     }
 
+    void OnUndoButtonPress()
+    {
+        Stone stoneToUndo = MovesHistory.Pop();
+
+        Destroy(stoneToUndo.stone);
+        SetPointOnBoardOccupancyState(stoneToUndo.point, OccupancyState.None);
+        IsBlacksTurn = !IsBlacksTurn;
+
+        if (IsBlacksTurn)
+        {
+            IllegalMovesController.DestroyIllegalMoveWarnings();
+            IllegalMovesController.ShowIllegalMoves();
+        }
+
+        if (IsOnlineGame)
+        {
+            StartCoroutine(FirebaseDao.SetTurnOverAfterPressingUndoButton());
+        }
+    }
+
     bool AttemptToPlaceStone(Point gridPoint)
     {
-        Vector3 worldVector = new Vector3(gridPoint.X, 0, gridPoint.Y);
 
         if (GetPointOnBoardOccupancyState(gridPoint) == OccupancyState.None)
         {
             if (IsBlacksTurn || IsDebugModeWithOnlyBlackPieces)
             {
-                Instantiate(blackStone, worldVector, Quaternion.identity);
                 SetPointOnBoardOccupancyState(gridPoint, OccupancyState.Black);
                 if (IllegalMovesCalculator.MoveProducesFiveToWin(gridPoint, OccupancyState.Black))
                 {
@@ -97,7 +134,6 @@ public class RenjuBoard : MonoBehaviour
             }
             else
             {
-                Instantiate(whiteStone, worldVector, Quaternion.identity);
                 SetPointOnBoardOccupancyState(gridPoint, OccupancyState.White);
                 if (IllegalMovesCalculator.MoveProducesFiveToWin(gridPoint, OccupancyState.White))
                 {
@@ -122,23 +158,76 @@ public class RenjuBoard : MonoBehaviour
         {
             return OccupancyState.OutsideOfBoard;
         }
-        return board[point.X, point.Y];
+        return Board[point.X, point.Y];
     }
 
     public static void SetPointOnBoardOccupancyState(Point point, OccupancyState state)
     {
-        board[point.X, point.Y] = state;
+        Vector3 worldVector = new Vector3(point.X, 0, point.Y);
+
+        if (state == OccupancyState.Black)
+        {
+            GameObject stone = Instantiate(BlackStone, worldVector, Quaternion.identity);
+            MovesHistory.Push(Stone.newStoneWithPointAndObjectReference(point, stone));
+        }
+        else if (state == OccupancyState.White)
+        {
+            GameObject stone = Instantiate(WhiteStone, worldVector, Quaternion.identity);
+            MovesHistory.Push(Stone.newStoneWithPointAndObjectReference(point, stone));
+        }
+
+        Board[point.X, point.Y] = state;
     }
 
     void SetWinner(PlayerColour pc)
     {
         if (pc == PlayerColour.Black)
         {
-            Instantiate(BlackWinMessage);
+            GameObject WinMessage = Resources.Load<GameObject>(GameConstants.BLACK_WIN_MESSAGE);
+            if (IsOnlineGame)
+            {
+                WinMessage.GetComponent<Text>().text = FirebaseDao.OnlineRoomInfo.Player1 + " Wins!";
+            }
+
+            BlackWinMessage = Instantiate(WinMessage);
         }
         else
         {
-            Instantiate(WhiteWinMessage);
+            GameObject WinMessage = Resources.Load<GameObject>(GameConstants.WHITE_WIN_MESSAGE);
+            if (IsOnlineGame)
+            {
+                WinMessage.GetComponent<Text>().text = FirebaseDao.OnlineRoomInfo.Player2 + " Wins!";
+            }
+
+            WhiteWinMessage = Instantiate(WinMessage);
         }
+
+        IsGameOver = true;
+    }
+
+    void ResetGameState()
+    {
+        IllegalMovesController.DestroyIllegalMoveWarnings();
+        Board = new OccupancyState[15,15];
+        IsCurrentlyProcessingUndoRequest = false;
+        FirebaseDao.OnlineRoomInfo = null;
+
+        while (MovesHistory.Count > 0) //empty the board of stones
+        {
+            OnUndoButtonPress();
+        }
+
+        if (BlackWinMessage != null)
+        {
+            Destroy(BlackWinMessage);
+        }
+        if (WhiteWinMessage != null)
+        {
+            Destroy(WhiteWinMessage);
+        }
+
+        IsGameOver = false;
+        IsBlacksTurn = true;
+        PlayerEntryForm.CreateNewOnlineGame();
     }
 }

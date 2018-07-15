@@ -10,6 +10,7 @@ public class RoomDto {
     public string Player2 { get; set; }
 
     public bool IsBlacksTurn { get; set; }
-    public bool IsWhitesTurn { get; set; }
+    public bool IsUndoButtonPressedByOpponent { get; set; }
+
     public Point OpponentsLastMove { get; set; }
 }

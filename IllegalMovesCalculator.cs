@@ -108,42 +108,42 @@ public static class IllegalMovesCalculator
             Point threeAfter = point.GetPointNStepsAfter(3, dir);
             Point fourAfter = point.GetPointNStepsAfter(4, dir);
 
-            if (RenjuBoard.GetPointOnBoardOccupancyState(fourBefore) == OccupancyState.Black &&
-                RenjuBoard.GetPointOnBoardOccupancyState(threeBefore) == OccupancyState.Black &&
-                RenjuBoard.GetPointOnBoardOccupancyState(twoBefore) == OccupancyState.Black &&
-                RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == OccupancyState.Black)
+            if (RenjuBoard.GetPointOnBoardOccupancyState(fourBefore) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(threeBefore) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(twoBefore) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == playerColourOccupancyState)
             {
                 return true;
             }
 
-            if (RenjuBoard.GetPointOnBoardOccupancyState(threeBefore) == OccupancyState.Black &&
-                RenjuBoard.GetPointOnBoardOccupancyState(twoBefore) == OccupancyState.Black &&
-                RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == OccupancyState.Black &&
-                RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == OccupancyState.Black)
+            if (RenjuBoard.GetPointOnBoardOccupancyState(threeBefore) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(twoBefore) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == playerColourOccupancyState)
             {
                 return true;
             }
 
-            if (RenjuBoard.GetPointOnBoardOccupancyState(twoBefore) == OccupancyState.Black &&
-                RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == OccupancyState.Black &&
-                RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == OccupancyState.Black &&
-                RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == OccupancyState.Black)
+            if (RenjuBoard.GetPointOnBoardOccupancyState(twoBefore) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == playerColourOccupancyState)
             {
                 return true;
             }
 
-            if (RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == OccupancyState.Black &&
-                RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == OccupancyState.Black &&
-                RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == OccupancyState.Black &&
-                RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == OccupancyState.Black)
+            if (RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == playerColourOccupancyState)
             {
                 return true;
             }
 
-            if (RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == OccupancyState.Black &&
-                RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == OccupancyState.Black &&
-                RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == OccupancyState.Black &&
-                RenjuBoard.GetPointOnBoardOccupancyState(fourAfter) == OccupancyState.Black)
+            if (RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(fourAfter) == playerColourOccupancyState)
             {
                 return true;
             }

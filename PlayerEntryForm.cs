@@ -5,17 +5,26 @@ using UnityEngine.UI;
 
 public class PlayerEntryForm : MonoBehaviour
 {
-    public GameObject EntryFormContainer;
+
     public Text RoomName;
     public Text PlayerName;
-
     public Toggle Player1Toggle;
-
     public Button PlayButton;
+
+    private static GameObject EntryFormContainer;
 
     void Start()
     {
-        PlayButton.onClick.AddListener(OnPlayButtonPress);
+        EntryFormContainer = GameObject.Find(GameConstants.ONLINE_MATCHMAKING_FORM);
+
+        if (RenjuBoard.IsOnlineGame)
+        {
+            PlayButton.onClick.AddListener(OnPlayButtonPress);
+        }
+        else
+        {
+            EntryFormContainer.SetActive(false);
+        }
     }
 
     void OnPlayButtonPress()
@@ -24,6 +33,11 @@ public class PlayerEntryForm : MonoBehaviour
         
         StartCoroutine(FirebaseDao.JoinRoomGivenPlayerNameAndPlayerNumber(RoomName.text, PlayerName.text, playerNumber));
 
-        Destroy(EntryFormContainer); //don't show form after entering user info
+        EntryFormContainer.SetActive(false); //don't show form after entering user info
+    }
+
+    public static void CreateNewOnlineGame()
+    {
+        EntryFormContainer.SetActive(true);
     }
 }
