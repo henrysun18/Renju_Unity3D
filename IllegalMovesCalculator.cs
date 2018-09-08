@@ -4,17 +4,23 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-public static class IllegalMovesCalculator
+public class IllegalMovesCalculator
 {
-    private static Point currentPointBeingChecked;
+    private RenjuBoard RenjuBoard;
+    private Point currentPointBeingChecked;
 
-    public static List<IllegalMove> CalculateIllegalMoves()
+    public IllegalMovesCalculator(RenjuBoard boardToPerformCalculationsOn)
+    {
+        RenjuBoard = boardToPerformCalculationsOn;
+    }
+
+    public List<IllegalMove> CalculateIllegalMoves()
     {
         List<IllegalMove> illegalPoints = new List<IllegalMove>();
 
-        for (int x = 0; x < RenjuBoard.BOARD_SIZE; x++)
+        for (int x = 0; x < GameConfiguration.BOARD_SIZE; x++)
         {
-            for (int y = 0; y < RenjuBoard.BOARD_SIZE; y++)
+            for (int y = 0; y < GameConfiguration.BOARD_SIZE; y++)
             {
                 currentPointBeingChecked = Point.At(x, y);
 
@@ -46,7 +52,7 @@ public static class IllegalMovesCalculator
         return illegalPoints;
     }
 
-    private static bool MoveProducesOverline(Point point)
+    private bool MoveProducesOverline(Point point)
     {
         foreach (Direction dir in Enum.GetValues(typeof(Direction)))
         {
@@ -95,7 +101,7 @@ public static class IllegalMovesCalculator
         return false;
     }
 
-    public static bool MoveProducesFiveToWin(Point point, OccupancyState playerColourOccupancyState)
+    public bool MoveProducesFiveToWin(Point point, OccupancyState playerColourOccupancyState)
     {
         foreach (Direction dir in Enum.GetValues(typeof(Direction)))
         {
@@ -154,7 +160,7 @@ public static class IllegalMovesCalculator
 
     #region 3x3 logic
 
-    private static int CountOpenThrees(Point point)
+    private int CountOpenThrees(Point point)
     {
         int numOpenThrees = 0;
 
@@ -183,7 +189,7 @@ public static class IllegalMovesCalculator
         return numOpenThrees;
     }
 
-    private static bool isOpenBBNBstartingAt(Point point, Direction dir)
+    private bool isOpenBBNBstartingAt(Point point, Direction dir)
     {
         Point oneBefore = point.GetPointNStepsAfter(-1, dir);
         Point oneAfter = point.GetPointNStepsAfter(1, dir);
@@ -204,7 +210,7 @@ public static class IllegalMovesCalculator
         return false;
     }
 
-    private static bool isOpenBNBBstartingAt(Point point, Direction dir)
+    private bool isOpenBNBBstartingAt(Point point, Direction dir)
     {
         Point oneBefore = point.GetPointNStepsAfter(-1, dir);
         Point oneAfter = point.GetPointNStepsAfter(1, dir);
@@ -225,7 +231,7 @@ public static class IllegalMovesCalculator
         return false;
     }
 
-    private static bool isOpenBBBstartingAt(Point point, Direction dir)
+    private bool isOpenBBBstartingAt(Point point, Direction dir)
     {
         Point oneBefore = point.GetPointNStepsAfter(-1, dir);
         Point twoBefore = point.GetPointNStepsAfter(-2, dir);
@@ -255,7 +261,7 @@ public static class IllegalMovesCalculator
         return false;
     }
 
-    private static bool isNoOverlineHazardSurroundingNBBBBNwithFirstBstartingAt(Point point, Direction dir)
+    private bool isNoOverlineHazardSurroundingNBBBBNwithFirstBstartingAt(Point point, Direction dir)
     {
         Point twoBefore = point.GetPointNStepsAfter(-2, dir);
         Point fiveAfter = point.GetPointNStepsAfter(5, dir);
@@ -273,7 +279,7 @@ public static class IllegalMovesCalculator
 
     #region 4x4 logic
 
-    private static int CountOpenFours(Point point)
+    private int CountOpenFours(Point point)
     {
         int numOpenFours = 0;
 
@@ -302,7 +308,7 @@ public static class IllegalMovesCalculator
         return numOpenFours;
     }
 
-    private static bool isNotClosedBBBBstartingAt(Point point, Direction dir)
+    private bool isNotClosedBBBBstartingAt(Point point, Direction dir)
     {
         Point oneBefore = point.GetPointNStepsAfter(-1, dir);
         Point twoBefore = point.GetPointNStepsAfter(-2, dir);
@@ -331,7 +337,7 @@ public static class IllegalMovesCalculator
         return false;
     }
 
-    private static bool isBBBNBorBBNBBorBNBBBstartingAt(Point point, Direction dir)
+    private bool isBBBNBorBBNBBorBNBBBstartingAt(Point point, Direction dir)
     {
         int numBlackPiecesFound = 0;
 

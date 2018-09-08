@@ -17,7 +17,7 @@ public class PlayerEntryForm : MonoBehaviour
     {
         EntryFormContainer = GameObject.Find(GameConstants.ONLINE_MATCHMAKING_FORM);
 
-        if (RenjuBoard.IsOnlineGame)
+        if (GameConfiguration.IsOnlineGame)
         {
             PlayButton.onClick.AddListener(OnPlayButtonPress);
         }
@@ -34,10 +34,15 @@ public class PlayerEntryForm : MonoBehaviour
         StartCoroutine(FirebaseDao.JoinRoomGivenPlayerNameAndPlayerNumber(RoomName.text, PlayerName.text, playerNumber));
 
         EntryFormContainer.SetActive(false); //don't show form after entering user info
+        GameConfiguration.IsWaitingOnPlayerEntryForm = false;
     }
 
     public static void CreateNewOnlineGame()
     {
         EntryFormContainer.SetActive(true);
+        GameConfiguration.IsWaitingOnPlayerEntryForm = true;
+
+        GameObject.Find(GameConstants.P1_LABEL_GAMEOBJECT).GetComponent<Text>().text = "";
+        GameObject.Find(GameConstants.P2_LABEL_GAMEOBJECT).GetComponent<Text>().text = "";
     }
 }

@@ -11,29 +11,61 @@ public class FirebaseDao : MonoBehaviour
 {
     public static string OnlineRoomName;
     public static PlayerNumber OnlinePlayerNumber = PlayerNumber.One;
-    public static RoomDto OnlineRoomInfo = new RoomDto();
+    public static RoomDto OnlineRoomInfo = new RoomDto{UndoStates = new UndoStatesDto(), OpponentsLastMove = Point.At(-1, -1)};
+
+    private RenjuBoard RenjuBoard;
+    private PlayerEntryForm PlayerEntryForm;
 
     private static string PATCH_PARAM = "?x-http-method-override=PATCH";
-    private static string POST_PARAM = "?x-http-method-override=POST";
-    private static string PUT_PARAM = "?x-http-method-override=PUT";
-    private static string GET_PARAM = "?x-http-method-override=GET";
+    private string GET_PARAM = "?x-http-method-override=GET";
     private static string roomsListUrl = "https://henrys-firebase-db.firebaseio.com/Renju/Rooms/";
-    private static string baseUrlJson = "https://henrys-firebase-db.firebaseio.com/Renju.json";
-    private static string roomsUrlJson = "https://henrys-firebase-db.firebaseio.com/Renju/Rooms.json";
 
-    private static bool IsUndoAcknowledged = true;
+    private bool IsUndoUnacknowledged = true;
+
+    void Start()
+    {
+        RenjuBoard = gameObject.GetComponent<RenjuBoard>(); //gets the board that this (optional) script is attached to
+
+        JsonConvert.DefaultSettings = () => new JsonSerializerSettings
+        {
+            NullValueHandling = NullValueHandling.Ignore, //need to be able to update some properties of RoomDto without overwriting others
+        };
+        InvokeRepeating("SyncGameWithDB", 0.2f, 0.5f); //0.2s delay, repeat every 0.5s
+    }
+
+    void SyncGameWithDB()
+    {
+        if (!GameConfiguration.IsWaitingOnPlayerEntryForm)
+        {
+            StartCoroutine(GetRoomInfo());
+
+            if (IsUndoButtonUnacknowledged())
+            {
+                RenjuBoard.OnUndoButtonPress(); //do this first so OnUndoButtonPress goes through correct control flow
+                StartCoroutine(ConfirmUndoRequest()); 
+            }
+            else if (IsOpponentDoneChoosingAMove())
+            {
+                RenjuBoard.AttemptToPlaceStone(GetOpponentsLastMove());
+            }
+        }
+    }
 
     public static IEnumerator JoinRoomGivenPlayerNameAndPlayerNumber(string roomName, string playerName, PlayerNumber playerNumber)
     {
         OnlineRoomName = roomName;
         OnlinePlayerNumber = playerNumber;
+        if (playerName.Equals(""))
+        {
+            playerName = "Player " + playerNumber;
+        }
         if (playerNumber == PlayerNumber.One)
         {
-            OnlineRoomInfo = new RoomDto
+            OnlineRoomInfo = new RoomDto //don't set IsBlacksTurn to true yet, make sure white is in first
             {
                 Player1 = playerName, //wait for p2 to arrive before IsBlacksTurn is set
-                IsBlacksTurn = true,
-                UndoStates = new UndoStatesDto()
+                UndoStates = new UndoStatesDto(),
+                OpponentsLastMove = Point.At(-1, -1)
             };
         }
         else
@@ -41,7 +73,9 @@ public class FirebaseDao : MonoBehaviour
             OnlineRoomInfo = new RoomDto
             {
                 Player2 = playerName,
-                IsBlacksTurn = true
+                IsBlacksTurn = true,
+                UndoStates = new UndoStatesDto(),
+                OpponentsLastMove = Point.At(-1, -1)
             };
         }
 
@@ -53,7 +87,7 @@ public class FirebaseDao : MonoBehaviour
         }
     }
 
-    public static IEnumerator GetRoomInfo()
+    public IEnumerator GetRoomInfo()
     {
         using (WWW www = new WWW(roomsListUrl + OnlineRoomName + ".json" + GET_PARAM))
         {
@@ -61,11 +95,13 @@ public class FirebaseDao : MonoBehaviour
             if (www.isDone)
             {
                 OnlineRoomInfo = JsonConvert.DeserializeObject<RoomDto>(www.text);
+                GameObject.Find(GameConstants.P1_LABEL_GAMEOBJECT).GetComponent<Text>().text = "Black: " + OnlineRoomInfo.Player1;
+                GameObject.Find(GameConstants.P2_LABEL_GAMEOBJECT).GetComponent<Text>().text = "White: " + OnlineRoomInfo.Player2;
             }
         }
     }
 
-    public static IEnumerator SetTurnOverAfterMyMove(Point myMove)
+    public IEnumerator SetTurnOverAfterMyMove(Point myMove)
     {
         RoomDto roomDto = new RoomDto
         {
@@ -81,7 +117,7 @@ public class FirebaseDao : MonoBehaviour
         }
     }
 
-    public static IEnumerator PressUndoButton()
+    public IEnumerator PressUndoButton()
     {
         RoomDto roomDto = new RoomDto
         {
@@ -102,39 +138,44 @@ public class FirebaseDao : MonoBehaviour
         }
     }
 
-    public static bool IsMyTurn()
+    public bool IsMyTurn()
     {
         return OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.One) && RenjuBoard.IsBlacksTurn ||
                !OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.Two) && !RenjuBoard.IsBlacksTurn;
     }
 
-    public static bool IsOpponentDoneChoosingAMove()
+    public bool IsOpponentDoneChoosingAMove()
     {
         return OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.One) && !RenjuBoard.IsBlacksTurn || //previously white's turn
                !OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.Two) && RenjuBoard.IsBlacksTurn; //need to simulate other player's move first
     }
 
-    public static bool IsUndoButtonUnacknowledged()
+    public bool IsUndoButtonUnacknowledged()
     {
+        if (OnlineRoomInfo == null || OnlineRoomInfo.UndoStates == null)
+        {
+            return false;
+        }
+
         if (OnlinePlayerNumber == PlayerNumber.One && !OnlineRoomInfo.UndoStates.IsUndoButtonPressedByWhite ||
             OnlinePlayerNumber == PlayerNumber.Two && !OnlineRoomInfo.UndoStates.IsUndoButtonPressedByBlack)
         {
-            IsUndoAcknowledged = false;
+            IsUndoUnacknowledged = true;
         }
 
         if (OnlinePlayerNumber == PlayerNumber.One)
         {
-            return OnlineRoomInfo.UndoStates.IsUndoButtonPressedByWhite && !IsUndoAcknowledged;
+            return OnlineRoomInfo.UndoStates.IsUndoButtonPressedByWhite && IsUndoUnacknowledged;
         }
         else
         {
-            return OnlineRoomInfo.UndoStates.IsUndoButtonPressedByBlack && !IsUndoAcknowledged;
+            return OnlineRoomInfo.UndoStates.IsUndoButtonPressedByBlack && IsUndoUnacknowledged;
         }
     }
 
-    public static IEnumerator ConfirmUndoRequest()
+    public IEnumerator ConfirmUndoRequest()
     {
-        IsUndoAcknowledged = true;
+        IsUndoUnacknowledged = false;
 
         UndoStatesDto undoStatesDto = new UndoStatesDto
         {
@@ -150,7 +191,7 @@ public class FirebaseDao : MonoBehaviour
         }
     }
 
-    public static Point GetOpponentsLastMove()
+    public Point GetOpponentsLastMove()
     {
         return OnlineRoomInfo.OpponentsLastMove;
     }

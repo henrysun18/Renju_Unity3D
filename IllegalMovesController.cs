@@ -4,19 +4,27 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-public static class IllegalMovesController {
+public class IllegalMovesController {
 
     public static GameObject Double3Warning = Resources.Load<GameObject>("Double3");
     public static GameObject Double4Warning = Resources.Load<GameObject>("Double4");
     public static GameObject OverlineWarning = Resources.Load<GameObject>("Overline");
 
+    private RenjuBoard RenjuBoard;
+    private IllegalMovesCalculator IllegalMovesCalculator;
     private static List<IllegalMove> illegalMoves = new List<IllegalMove>();
     private static List<GameObject> warningObjects = new List<GameObject>();
 
-    // Update is called once per frame
-    public static void ShowIllegalMoves()
+    public IllegalMovesController(RenjuBoard boardToOperateOn, IllegalMovesCalculator illegalMovesCalculator)
     {
-        if (RenjuBoard.IsDebugModeWithOnlyBlackPieces)
+        RenjuBoard = boardToOperateOn;
+        IllegalMovesCalculator = illegalMovesCalculator;
+    }
+
+    // Update is called once per frame
+    public void ShowIllegalMoves()
+    {
+        if (GameConfiguration.IsDebugModeWithOnlyBlackPieces)
         {
             DestroyIllegalMoveWarnings(); //destroy then refresh, otherwise old illegal moves stay there even when legal
         }
@@ -28,7 +36,7 @@ public static class IllegalMovesController {
         InstantiateIllegalMoveWarnings();
     }
 
-    public static void InstantiateIllegalMoveWarnings()
+    public void InstantiateIllegalMoveWarnings()
     {
         foreach (IllegalMove illegalMove in illegalMoves)
         {
@@ -60,7 +68,7 @@ public static class IllegalMovesController {
         }
     }
 
-    public static void DestroyIllegalMoveWarnings()
+    public void DestroyIllegalMoveWarnings()
     {
         foreach (IllegalMove illegalMove in illegalMoves)
         {
