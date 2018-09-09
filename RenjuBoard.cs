@@ -167,10 +167,6 @@ public class RenjuBoard : MonoBehaviour
             GameObject stone = Instantiate(WhiteStone, worldVector, Quaternion.identity);
             MovesHistory.Push(Stone.newStoneWithPointAndObjectReference(point, stone));
         }
-        else if (state != OccupancyState.None)
-        {
-            return;
-        }
 
         Board[point.X, point.Y] = state;
     }

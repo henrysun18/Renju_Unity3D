@@ -292,11 +292,11 @@ public class IllegalMovesCalculator
                 isNotClosedBBBBstartingAt(oneBefore, dir) ||
                 isNotClosedBBBBstartingAt(point, dir) ||
 
-                isBBBNBorBBNBBorBNBBBstartingAt(fourBefore, dir) ||
-                isBBBNBorBBNBBorBNBBBstartingAt(threeBefore, dir) ||
-                isBBBNBorBBNBBorBNBBBstartingAt(twoBefore, dir) ||
-                isBBBNBorBBNBBorBNBBBstartingAt(oneBefore, dir) ||
-                isBBBNBorBBNBBorBNBBBstartingAt(point, dir))
+                isNotClosedBBBNBorBBNBBorBNBBBstartingAt(fourBefore, dir) ||
+                isNotClosedBBBNBorBBNBBorBNBBBstartingAt(threeBefore, dir) ||
+                isNotClosedBBBNBorBBNBBorBNBBBstartingAt(twoBefore, dir) ||
+                isNotClosedBBBNBorBBNBBorBNBBBstartingAt(oneBefore, dir) ||
+                isNotClosedBBBNBorBBNBBorBNBBBstartingAt(point, dir))
             {
                 numOpenFours++;
             }
@@ -334,14 +334,22 @@ public class IllegalMovesCalculator
         return false;
     }
 
-    private bool isBBBNBorBBNBBorBNBBBstartingAt(Point point, Direction dir)
+    private bool isNotClosedBBBNBorBBNBBorBNBBBstartingAt(Point point, Direction dir)
     {
         int numBlackPiecesFound = 0;
 
+        Point oneBefore = point.GetPointNStepsAfter(-1, dir);
         Point oneAfter = point.GetPointNStepsAfter(1, dir);
         Point twoAfter = point.GetPointNStepsAfter(2, dir);
         Point threeAfter = point.GetPointNStepsAfter(3, dir);
         Point fourAfter = point.GetPointNStepsAfter(4, dir);
+        Point fiveAfter = point.GetPointNStepsAfter(5, dir);
+
+        if (RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == OccupancyState.Black ||
+            RenjuBoard.GetPointOnBoardOccupancyState(fiveAfter) == OccupancyState.Black)
+        {
+            return false; //cannot produce 5 in a row due to overline hazard
+        }
 
         if (RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == OccupancyState.White ||
             RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == OccupancyState.White ||
