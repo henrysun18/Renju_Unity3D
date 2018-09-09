@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -95,6 +93,11 @@ public class RenjuBoard : MonoBehaviour
 
     public void UndoOneMove()
     {
+        if (MovesHistory.Count == 0)
+        {
+            return;
+        }
+
         Stone stoneToUndo = MovesHistory.Pop();
 
         Destroy(stoneToUndo.stone);
@@ -179,7 +182,7 @@ public class RenjuBoard : MonoBehaviour
             WinMessage = BlackWinMessage;
             if (GameConfiguration.IsOnlineGame)
             {
-                WinMessage.GetComponent<TextMesh>().text = FirebaseDao.OnlineRoomInfo.Player1 + " Wins!";
+                WinMessage.GetComponent<TextMesh>().text = FirebaseDao.OnlineRoomInfo.PlayerInfo.Player1 + " Wins!";
             }
         }
         else
@@ -187,7 +190,7 @@ public class RenjuBoard : MonoBehaviour
             WinMessage = WhiteWinMessage;
             if (GameConfiguration.IsOnlineGame)
             {
-                WinMessage.GetComponent<TextMesh>().text = FirebaseDao.OnlineRoomInfo.Player2 + " Wins!";
+                WinMessage.GetComponent<TextMesh>().text = FirebaseDao.OnlineRoomInfo.PlayerInfo.Player2 + " Wins!";
             }
         }
 
