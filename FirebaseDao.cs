@@ -14,13 +14,14 @@ public class FirebaseDao : MonoBehaviour
     public static RoomDto OnlineRoomInfo = new RoomDto{UndoStates = new UndoStatesDto(), OpponentsLastMove = Point.At(-1, -1)};
 
     private RenjuBoard RenjuBoard;
-    private PlayerEntryForm PlayerEntryForm;
 
     private static string PATCH_PARAM = "?x-http-method-override=PATCH";
+    private static string PUT_PARAM = "?x-http-method-override=PUT";
     private string GET_PARAM = "?x-http-method-override=GET";
     private static string roomsListUrl = "https://henrys-firebase-db.firebaseio.com/Renju/Rooms/";
 
-    private bool IsUndoUnacknowledged = true;
+    private bool IsUndoAcknowledged;
+    private bool IsUndoPressed;
 
     void Start()
     {
@@ -39,10 +40,14 @@ public class FirebaseDao : MonoBehaviour
         {
             StartCoroutine(GetRoomInfo());
 
-            if (IsUndoButtonUnacknowledged())
+            if (!IsUndoButtonAvailable() && !IsUndoAcknowledged) //respond to opponent's undo request
             {
-                RenjuBoard.OnUndoButtonPress(); //do this first so OnUndoButtonPress goes through correct control flow
-                StartCoroutine(ConfirmUndoRequest()); 
+                if (OnlinePlayerNumber == PlayerNumber.Two && OnlineRoomInfo.UndoStates.IsUndoButtonPressedByBlack ||
+                    OnlinePlayerNumber == PlayerNumber.One && OnlineRoomInfo.UndoStates.IsUndoButtonPressedByWhite)
+                {
+                    RenjuBoard.UndoOneMove();
+                    StartCoroutine(ConfirmUndoRequest());
+                }
             }
             else if (IsOpponentDoneChoosingAMove())
             {
@@ -55,35 +60,34 @@ public class FirebaseDao : MonoBehaviour
     {
         OnlineRoomName = roomName;
         OnlinePlayerNumber = playerNumber;
+
         if (playerName.Equals(""))
         {
             playerName = "Player " + playerNumber;
         }
         if (playerNumber == PlayerNumber.One)
         {
-            OnlineRoomInfo = new RoomDto //don't set IsBlacksTurn to true yet, make sure white is in first
+            RoomDto roomInfo = new RoomDto
             {
-                Player1 = playerName, //wait for p2 to arrive before IsBlacksTurn is set
-                UndoStates = new UndoStatesDto(),
-                OpponentsLastMove = Point.At(-1, -1)
-            };
-        }
-        else
-        {
-            OnlineRoomInfo = new RoomDto
-            {
-                Player2 = playerName,
+                Player1 = playerName,
                 IsBlacksTurn = true,
                 UndoStates = new UndoStatesDto(),
                 OpponentsLastMove = Point.At(-1, -1)
             };
+            string data = JsonConvert.SerializeObject(roomInfo);
+            byte[] rawData = Encoding.ASCII.GetBytes(data);
+            using (WWW www = new WWW(roomsListUrl + OnlineRoomName + ".json" + PUT_PARAM, rawData))
+            {
+                yield return www;
+            }
         }
-
-        string data = JsonConvert.SerializeObject(OnlineRoomInfo);
-        byte[] rawData = Encoding.ASCII.GetBytes(data);
-        using (WWW www = new WWW(roomsListUrl + OnlineRoomName + ".json" + PATCH_PARAM, rawData))
+        else
         {
-            yield return www;
+            byte[] rawData = Encoding.ASCII.GetBytes(playerName);
+            using (WWW www = new WWW(roomsListUrl + OnlineRoomName + "/Player2.json" + PUT_PARAM, rawData))
+            {
+                yield return www;
+            }
         }
     }
 
@@ -94,7 +98,14 @@ public class FirebaseDao : MonoBehaviour
             yield return www;
             if (www.isDone)
             {
-                OnlineRoomInfo = JsonConvert.DeserializeObject<RoomDto>(www.text);
+                RoomDto tmpRoomDto = JsonConvert.DeserializeObject<RoomDto>(www.text);
+                if (IsUndoAcknowledged)
+                {
+                    tmpRoomDto.UndoStates = OnlineRoomInfo.UndoStates; //dont double acknowledge
+                    IsUndoAcknowledged = false; //only need this protection once
+                }
+                OnlineRoomInfo = tmpRoomDto;
+
                 GameObject.Find(GameConstants.P1_LABEL_GAMEOBJECT).GetComponent<Text>().text = "Black: " + OnlineRoomInfo.Player1;
                 GameObject.Find(GameConstants.P2_LABEL_GAMEOBJECT).GetComponent<Text>().text = "White: " + OnlineRoomInfo.Player2;
             }
@@ -119,6 +130,8 @@ public class FirebaseDao : MonoBehaviour
 
     public IEnumerator PressUndoButton()
     {
+        IsUndoPressed = true;
+
         RoomDto roomDto = new RoomDto
         {
             UndoStates = new UndoStatesDto
@@ -150,40 +163,44 @@ public class FirebaseDao : MonoBehaviour
                !OnlineRoomInfo.IsBlacksTurn && OnlinePlayerNumber.Equals(PlayerNumber.Two) && RenjuBoard.IsBlacksTurn; //need to simulate other player's move first
     }
 
-    public bool IsUndoButtonUnacknowledged()
+    public bool IsUndoButtonAvailable()
     {
         if (OnlineRoomInfo == null || OnlineRoomInfo.UndoStates == null)
+        {
+            return true;
+        }
+
+        //if sender's button press just propagated to db, don't break early
+        if (OnlinePlayerNumber == PlayerNumber.One && OnlineRoomInfo.UndoStates.IsUndoButtonPressedByBlack ||
+            OnlinePlayerNumber == PlayerNumber.Two && OnlineRoomInfo.UndoStates.IsUndoButtonPressedByWhite)
+        {
+            IsUndoPressed = false;
+        }
+
+        //if sender presses button and it still hasn't propagated to db
+        if (IsUndoPressed)
         {
             return false;
         }
 
-        if (OnlinePlayerNumber == PlayerNumber.One && !OnlineRoomInfo.UndoStates.IsUndoButtonPressedByWhite ||
-            OnlinePlayerNumber == PlayerNumber.Two && !OnlineRoomInfo.UndoStates.IsUndoButtonPressedByBlack)
+        //by now, only sender sees undo being performed. both sides see UndoStates.IsUndoButtonPressedByOriginator
+        
+        if (OnlineRoomInfo.UndoStates.IsUndoButtonPressedByBlack || OnlineRoomInfo.UndoStates.IsUndoButtonPressedByWhite)
         {
-            IsUndoUnacknowledged = true;
+            return false; //undo button unavailable since we need to process sender's undo action first
         }
 
-        if (OnlinePlayerNumber == PlayerNumber.One)
-        {
-            return OnlineRoomInfo.UndoStates.IsUndoButtonPressedByWhite && IsUndoUnacknowledged;
-        }
-        else
-        {
-            return OnlineRoomInfo.UndoStates.IsUndoButtonPressedByBlack && IsUndoUnacknowledged;
-        }
+        return true;
     }
 
     public IEnumerator ConfirmUndoRequest()
     {
-        IsUndoUnacknowledged = false;
+        OnlineRoomInfo.UndoStates.IsUndoButtonPressedByBlack = false;
+        OnlineRoomInfo.UndoStates.IsUndoButtonPressedByWhite = false;
+        IsUndoAcknowledged = true;
 
-        UndoStatesDto undoStatesDto = new UndoStatesDto
-        {
-            IsUndoButtonPressedByBlack = false,
-            IsUndoButtonPressedByWhite = false
-        };
-
-        string data = JsonConvert.SerializeObject(undoStatesDto);
+        //receiver tells sender to modifier IsUndoAcknowledged flag on sender side
+        string data = JsonConvert.SerializeObject(OnlineRoomInfo.UndoStates);
         byte[] rawData = Encoding.ASCII.GetBytes(data);
         using (WWW www = new WWW(roomsListUrl + OnlineRoomName + "/UndoStates.json" + PATCH_PARAM, rawData))
         {

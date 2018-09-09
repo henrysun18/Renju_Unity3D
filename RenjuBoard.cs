@@ -80,13 +80,21 @@ public class RenjuBoard : MonoBehaviour
 
         if (GameConfiguration.IsOnlineGame)
         {
-            if (!IsGameOver && !FirebaseDao.IsUndoButtonUnacknowledged())
+            if (!IsGameOver && FirebaseDao.IsUndoButtonAvailable())
             {
                 StartCoroutine(FirebaseDao.PressUndoButton());
-                System.Threading.Thread.Sleep(1000); //give some time for opponent to process and acknowledge
+            }
+            else
+            {
+                return; //disable undo button until undo button is acknowledged
             }
         }
 
+        UndoOneMove();
+    }
+
+    public void UndoOneMove()
+    {
         Stone stoneToUndo = MovesHistory.Pop();
 
         Destroy(stoneToUndo.stone);
