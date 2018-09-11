@@ -44,20 +44,23 @@ public class IllegalMovesController {
             float worldY = 0;
             float worldZ = illegalMove.point.Y;
             Vector3 worldVector3OfIllegalMove = new Vector3(worldX, worldY, worldZ);
+            Quaternion illegalMoveRotation = GameConfiguration.IsAndroidGame
+                ? GameConstants.IllegalMoveQuaternion
+                : Quaternion.identity;
 
             GameObject warning;
             switch (illegalMove.reason)
             {
                 case IllegalMoveReason.Double3:
-                    warning = UnityEngine.Object.Instantiate(Double3Warning, worldVector3OfIllegalMove, Quaternion.AngleAxis(180, Vector3.down)); //prefabs are flipped lol
+                    warning = UnityEngine.Object.Instantiate(Double3Warning, worldVector3OfIllegalMove, illegalMoveRotation);
                     warningObjects.Add(warning);
                     break;
                 case IllegalMoveReason.Double4:
-                    warning = UnityEngine.Object.Instantiate(Double4Warning, worldVector3OfIllegalMove, Quaternion.AngleAxis(180, Vector3.down));
+                    warning = UnityEngine.Object.Instantiate(Double4Warning, worldVector3OfIllegalMove, illegalMoveRotation);
                     warningObjects.Add(warning);
                     break;
                 case IllegalMoveReason.Overline:
-                    warning = UnityEngine.Object.Instantiate(OverlineWarning, worldVector3OfIllegalMove, Quaternion.AngleAxis(180, Vector3.down));
+                    warning = UnityEngine.Object.Instantiate(OverlineWarning, worldVector3OfIllegalMove, illegalMoveRotation);
                     warningObjects.Add(warning);
                     break;
                 default:

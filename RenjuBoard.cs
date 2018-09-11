@@ -109,18 +109,18 @@ public class RenjuBoard : MonoBehaviour
             DisableHaloFromPreviousStoneAndEnableOnThisStone(MovesHistory.Last.Value.stoneObj);
         }
 
+        IsBlacksTurn = !IsBlacksTurn;
+
+        //after undo, if it's blacks turn then redraw warnings, otherwise just remove
+        IllegalMovesController.DestroyIllegalMoveWarnings();
         if (IsBlacksTurn)
         {
-            IllegalMovesController.DestroyIllegalMoveWarnings();
             IllegalMovesController.ShowIllegalMoves();
         }
-
-        IsBlacksTurn = !IsBlacksTurn;
     }
 
     public bool AttemptToPlaceStone(Point gridPoint)
     {
-
         if (GetPointOnBoardOccupancyState(gridPoint) == OccupancyState.None)
         {
             if (IsBlacksTurn || GameConfiguration.IsDebugModeWithOnlyBlackPieces)

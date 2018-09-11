@@ -14,5 +14,6 @@ public static class GameConstants {
     public const string ONLINE_MATCHMAKING_FORM = "OnlineMatchmakingForm";
 
     public static Quaternion QuaternionTowardsBlack = Quaternion.Euler(90, 0, 90);
+    public static Quaternion IllegalMoveQuaternion = Quaternion.Euler(0, -90, 0);
     public static Quaternion QuaternionTowardsWhite = Quaternion.Euler(90, 0, -90);
 }
