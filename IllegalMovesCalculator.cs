@@ -281,22 +281,25 @@ public class IllegalMovesCalculator
         int numOpenFours = 0;
 
         foreach (Direction dir in Enum.GetValues(typeof(Direction)))
-        { 
-            Point fourBefore = point.GetPointNStepsAfter(-4, dir);
+        {
+            //may have two in the same direction!!
+            for (int i = -4; i <= 0; i++)
+            {
+                Point iBefore = point.GetPointNStepsAfter(i, dir);
+                if (isNotClosedBBBNBorBBNBBorBNBBBstartingAt(iBefore, dir))
+                {
+                    numOpenFours++;
+                }
+            }
+
+            //may only have one BBBB in a given direction
             Point threeBefore = point.GetPointNStepsAfter(-3, dir);
             Point twoBefore = point.GetPointNStepsAfter(-2, dir);
             Point oneBefore = point.GetPointNStepsAfter(-1, dir);
-
             if (isNotClosedBBBBstartingAt(threeBefore, dir) ||
                 isNotClosedBBBBstartingAt(twoBefore, dir) ||
                 isNotClosedBBBBstartingAt(oneBefore, dir) ||
-                isNotClosedBBBBstartingAt(point, dir) ||
-
-                isNotClosedBBBNBorBBNBBorBNBBBstartingAt(fourBefore, dir) ||
-                isNotClosedBBBNBorBBNBBorBNBBBstartingAt(threeBefore, dir) ||
-                isNotClosedBBBNBorBBNBBorBNBBBstartingAt(twoBefore, dir) ||
-                isNotClosedBBBNBorBBNBBorBNBBBstartingAt(oneBefore, dir) ||
-                isNotClosedBBBNBorBBNBBorBNBBBstartingAt(point, dir))
+                isNotClosedBBBBstartingAt(point, dir))
             {
                 numOpenFours++;
             }
@@ -355,13 +358,17 @@ public class IllegalMovesCalculator
             RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == OccupancyState.White ||
             RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == OccupancyState.White)
         {
-            return false; //ensure no white pieces in the middle
+            //ensure no white pieces in the middle
+            return false;
         }
 
-        if (RenjuBoard.GetPointOnBoardOccupancyState(point) == OccupancyState.Black || currentPointBeingChecked.Equals(point))
+        if (RenjuBoard.GetPointOnBoardOccupancyState(point) != OccupancyState.Black && !currentPointBeingChecked.Equals(point) ||
+            RenjuBoard.GetPointOnBoardOccupancyState(fourAfter) != OccupancyState.Black && !currentPointBeingChecked.Equals(fourAfter))
         {
-            numBlackPiecesFound++;
+            //ensure leftmost and rightmost pieces are black
+            return false;
         }
+
         if (RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == OccupancyState.Black || currentPointBeingChecked.Equals(oneAfter))
         {
             numBlackPiecesFound++;
@@ -374,12 +381,8 @@ public class IllegalMovesCalculator
         {
             numBlackPiecesFound++;
         }
-        if (RenjuBoard.GetPointOnBoardOccupancyState(fourAfter) == OccupancyState.Black || currentPointBeingChecked.Equals(fourAfter))
-        {
-            numBlackPiecesFound++;
-        }
 
-        return numBlackPiecesFound == 4;
+        return numBlackPiecesFound == 2;
     }
 
     #endregion
