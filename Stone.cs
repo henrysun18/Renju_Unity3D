@@ -7,12 +7,12 @@ public class Stone {
     public Stone(Point p, GameObject st)
     {
         point = p;
-        stone = st;
+        stoneObj = st;
     }
 
     public Point point { get; private set; }
 
-    public GameObject stone { get; private set; }
+    public GameObject stoneObj { get; private set; }
 
     public static Stone newStoneWithPointAndObjectReference(Point p, GameObject st)
     {

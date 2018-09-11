@@ -17,7 +17,7 @@ public class RenjuBoard : MonoBehaviour
     private IllegalMovesController IllegalMovesController;
 
     private OccupancyState[,] Board = new OccupancyState[GameConfiguration.BOARD_SIZE, GameConfiguration.BOARD_SIZE];
-    private Stack<Stone> MovesHistory = new Stack<Stone>();
+    private LinkedList<Stone> MovesHistory = new LinkedList<Stone>();
 
     private static GameObject BlackStone;
     private static GameObject WhiteStone;
@@ -39,7 +39,8 @@ public class RenjuBoard : MonoBehaviour
 
         BlackStone = Resources.Load<GameObject>(GameConstants.BLACK_STONE);
         WhiteStone = Resources.Load<GameObject>(GameConstants.WHITE_STONE);
-        GameObject.Find(GameConstants.UNDO_BUTTON_GAMEOBJECT).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
+        GameObject.Find(GameConstants.UNDO_BUTTON_BLACK).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
+        GameObject.Find(GameConstants.UNDO_BUTTON_WHITE).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
     }
 
     void OnMouseDown()
@@ -71,7 +72,7 @@ public class RenjuBoard : MonoBehaviour
 
     public void OnUndoButtonPress()
     {
-        if (MovesHistory.Count == 0)
+        if (MovesHistory.Count == 0 || IsGameOver)
         {
             return;
         }
@@ -98,17 +99,23 @@ public class RenjuBoard : MonoBehaviour
             return;
         }
 
-        Stone stoneToUndo = MovesHistory.Pop();
-
-        Destroy(stoneToUndo.stone);
+        Stone stoneToUndo = MovesHistory.Last.Value;
+        MovesHistory.RemoveLast();
+        Destroy(stoneToUndo.stoneObj);
         SetPointOnBoardOccupancyState(stoneToUndo.point, OccupancyState.None);
-        IsBlacksTurn = !IsBlacksTurn;
+
+        if (MovesHistory.Count > 0)
+        {
+            DisableHaloFromPreviousStoneAndEnableOnThisStone(MovesHistory.Last.Value.stoneObj);
+        }
 
         if (IsBlacksTurn)
         {
             IllegalMovesController.DestroyIllegalMoveWarnings();
             IllegalMovesController.ShowIllegalMoves();
         }
+
+        IsBlacksTurn = !IsBlacksTurn;
     }
 
     public bool AttemptToPlaceStone(Point gridPoint)
@@ -122,6 +129,7 @@ public class RenjuBoard : MonoBehaviour
                 if (IllegalMovesCalculator.MoveProducesFiveToWin(gridPoint, OccupancyState.Black))
                 {
                     SetWinner(PlayerColour.Black);
+                    return true; //don't show illegal moves
                 }
             }
             else
@@ -130,6 +138,7 @@ public class RenjuBoard : MonoBehaviour
                 if (IllegalMovesCalculator.MoveProducesFiveToWin(gridPoint, OccupancyState.White))
                 {
                     SetWinner(PlayerColour.White);
+                    return true;
                 }
             }
 
@@ -138,7 +147,7 @@ public class RenjuBoard : MonoBehaviour
             if (IsBlacksTurn || GameConfiguration.IsDebugModeWithOnlyBlackPieces) IllegalMovesController.ShowIllegalMoves();
             else IllegalMovesController.DestroyIllegalMoveWarnings();
 
-            return true; //successfully placed stone
+            return true; //successfully placed stoneObj
         }
 
         return false;
@@ -159,20 +168,39 @@ public class RenjuBoard : MonoBehaviour
 
         if (state == OccupancyState.Black)
         {
-            GameObject stone = Instantiate(BlackStone, worldVector, Quaternion.identity);
-            MovesHistory.Push(Stone.newStoneWithPointAndObjectReference(point, stone));
+            GameObject stoneObj = Instantiate(BlackStone, worldVector, Quaternion.identity);
+            DisableHaloFromPreviousStoneAndEnableOnThisStone(stoneObj);
+            
+            MovesHistory.AddLast(Stone.newStoneWithPointAndObjectReference(point, stoneObj));
         }
         else if (state == OccupancyState.White)
         {
-            GameObject stone = Instantiate(WhiteStone, worldVector, Quaternion.identity);
-            MovesHistory.Push(Stone.newStoneWithPointAndObjectReference(point, stone));
+            GameObject stoneObj = Instantiate(WhiteStone, worldVector, Quaternion.identity);
+            DisableHaloFromPreviousStoneAndEnableOnThisStone(stoneObj);
+
+            MovesHistory.AddLast(Stone.newStoneWithPointAndObjectReference(point, stoneObj));
         }
 
         Board[point.X, point.Y] = state;
     }
 
+    private void DisableHaloFromPreviousStoneAndEnableOnThisStone(GameObject stoneObj)
+    {
+        if (MovesHistory.Count > 0)
+        {
+            GameObject previousStoneObj = MovesHistory.Last.Value.stoneObj;
+            Component previousStoneHalo = previousStoneObj.GetComponent("Halo");
+            previousStoneHalo.GetType().GetProperty("enabled").SetValue(previousStoneHalo, false, null);
+        }
+
+        Component stoneHalo = stoneObj.GetComponent("Halo");
+        stoneHalo.GetType().GetProperty("enabled").SetValue(stoneHalo, true, null);
+    }
+
     void SetWinner(PlayerColour pc)
     {
+        IsGameOver = true;
+
         if (pc == PlayerColour.Black)
         {
             WinMessage = BlackWinMessage;
@@ -190,8 +218,49 @@ public class RenjuBoard : MonoBehaviour
             }
         }
 
-        WinMessage = Instantiate(WinMessage);
-        IsGameOver = true;
+        if (GameConfiguration.IsAndroidGame) //rotate towards winner if game is played in portrait mode
+        {
+            if (pc == PlayerColour.Black)
+            {
+                WinMessage = Instantiate(WinMessage, WinMessage.transform.position, GameConstants.QuaternionTowardsBlack);
+            }
+            else
+            {
+                WinMessage = Instantiate(WinMessage, WinMessage.transform.position, GameConstants.QuaternionTowardsWhite);
+            }
+        }
+        else
+        {
+            WinMessage = Instantiate(WinMessage);
+        }
+
+        ShowMoveHistory();
+    }
+
+    private void ShowMoveHistory()
+    {
+        int moveNumber = 1;
+        foreach (Stone move in MovesHistory)
+        {
+            foreach (Transform child in move.stoneObj.transform) //find the MoveNumberText child object
+            {
+                if (child.tag == "Text")
+                {
+                    TextMesh textMesh = child.gameObject.GetComponent<TextMesh>();
+                    textMesh.text = moveNumber.ToString();
+                    if (moveNumber % 2 == 0)
+                    {
+                        textMesh.color = Color.black; //set to opposite colour as the piece (white / even number move shows black)
+                    }
+
+                    if (GameConfiguration.IsAndroidGame)
+                    {
+                        child.rotation = GameConstants.QuaternionTowardsBlack;
+                    }
+                }
+            }
+            moveNumber++;
+        }
     }
 
     void ResetGameState()
@@ -201,7 +270,7 @@ public class RenjuBoard : MonoBehaviour
 
         while (MovesHistory.Count > 0) //empty the board of stones
         {
-            OnUndoButtonPress();
+            UndoOneMove();
         }
 
         if (WinMessage != null)
