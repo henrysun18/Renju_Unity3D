@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class RenjuBoard : MonoBehaviour
 {
-    public Camera computerPlayerCamera;
+    private Camera MainCamera;
     public GameObject BlackWinMessage;
     public GameObject WhiteWinMessage;
 
@@ -26,17 +26,17 @@ public class RenjuBoard : MonoBehaviour
     // Use this for initialization
     void Start ()
     {
-        IsBlacksTurn = true;
-        Screen.sleepTimeout = SleepTimeout.NeverSleep;
-
         if (GameConfiguration.IsOnlineGame)
         {
             FirebaseDao = gameObject.AddComponent<FirebaseDao>(); //adds multiplayer script if necessary
         }
 
+        IsBlacksTurn = true;
         IllegalMovesCalculator = new IllegalMovesCalculator(this);
         IllegalMovesController = new IllegalMovesController(this, IllegalMovesCalculator);
 
+        MainCamera = GameConfiguration.OrientCameraBasedOnPlatform();
+        
         BlackStone = Resources.Load<GameObject>(GameConstants.BLACK_STONE);
         WhiteStone = Resources.Load<GameObject>(GameConstants.WHITE_STONE);
         GameObject.Find(GameConstants.UNDO_BUTTON_BLACK).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
@@ -45,17 +45,23 @@ public class RenjuBoard : MonoBehaviour
 
     void OnMouseDown()
     {
+
         if (IsGameOver)
         {
             ResetGameState();
             return;
         }
 
-        Ray ray = computerPlayerCamera.ScreenPointToRay(Input.mousePosition);
+        Ray ray = MainCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
 
         if (Physics.Raycast(ray, out hit, 50))
         {
+            if (hit.collider.gameObject.tag == GameConstants.PROP)
+            {
+                return; //don't try placing stone if we hit a prop
+            }
+
             Point myMove = Point.At((int) Math.Round(hit.point.x), (int) Math.Round(hit.point.z));
 
             if (!GameConfiguration.IsOnlineGame) //LOCAL
@@ -66,7 +72,6 @@ public class RenjuBoard : MonoBehaviour
             {
                 StartCoroutine(FirebaseDao.SetTurnOverAfterMyMove(myMove));
             }
-            
         }
     }
 
@@ -123,7 +128,7 @@ public class RenjuBoard : MonoBehaviour
     {
         if (GetPointOnBoardOccupancyState(gridPoint) == OccupancyState.None)
         {
-            if (IsBlacksTurn || GameConfiguration.IsDebugModeWithOnlyBlackPieces)
+            if (IsBlacksTurn)
             {
                 SetPointOnBoardOccupancyState(gridPoint, OccupancyState.Black);
                 if (IllegalMovesCalculator.MoveProducesFiveToWin(gridPoint, OccupancyState.Black))
@@ -142,9 +147,12 @@ public class RenjuBoard : MonoBehaviour
                 }
             }
 
-            IsBlacksTurn = !IsBlacksTurn; //next guy's turn
+            if (!GameConfiguration.IsDebugModeWithSamePieceUntilUndo) //don't handle IsBlacksTurn when placing stone, only do so in Undo button
+            {
+                IsBlacksTurn = !IsBlacksTurn; //next guy's turn
+            }
 
-            if (IsBlacksTurn || GameConfiguration.IsDebugModeWithOnlyBlackPieces) IllegalMovesController.ShowIllegalMoves();
+            if (IsBlacksTurn) IllegalMovesController.ShowIllegalMoves();
             else IllegalMovesController.DestroyIllegalMoveWarnings();
 
             return true; //successfully placed stoneObj
@@ -242,23 +250,20 @@ public class RenjuBoard : MonoBehaviour
         int moveNumber = 1;
         foreach (Stone move in MovesHistory)
         {
-            foreach (Transform child in move.stoneObj.transform) //find the MoveNumberText child object
-            {
-                if (child.tag == "Text")
-                {
-                    TextMesh textMesh = child.gameObject.GetComponent<TextMesh>();
-                    textMesh.text = moveNumber.ToString();
-                    if (moveNumber % 2 == 0)
-                    {
-                        textMesh.color = Color.black; //set to opposite colour as the piece (white / even number move shows black)
-                    }
+            Transform moveNumberTransform = move.stoneObj.transform.Find(GameConstants.MOVE_NUMBER_TEXT);
+            TextMesh textMesh = moveNumberTransform.GetComponent<TextMesh>();
+            textMesh.text = moveNumber.ToString();
 
-                    if (GameConfiguration.IsAndroidGame)
-                    {
-                        child.rotation = GameConstants.QuaternionTowardsBlack;
-                    }
-                }
+            if (moveNumber % 2 == 0)
+            {
+                textMesh.color = Color.black; //set to opposite colour as the piece (white / even number move shows black)
             }
+
+            if (GameConfiguration.IsAndroidGame)
+            {
+                moveNumberTransform.rotation = GameConstants.QuaternionTowardsBlack;
+            }
+
             moveNumber++;
         }
     }
@@ -266,6 +271,7 @@ public class RenjuBoard : MonoBehaviour
     void ResetGameState()
     {
         IllegalMovesController.DestroyIllegalMoveWarnings();
+        GameObject.Find(GameConstants.OFFICE_PROPS).GetComponent<OfficeProps>().ResetAllProps();
         Board = new OccupancyState[15,15];
 
         while (MovesHistory.Count > 0) //empty the board of stones

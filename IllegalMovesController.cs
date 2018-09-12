@@ -22,7 +22,7 @@ public class IllegalMovesController {
     // Update is called once per frame
     public void ShowIllegalMoves()
     {
-        if (GameConfiguration.IsDebugModeWithOnlyBlackPieces)
+        if (GameConfiguration.IsDebugModeWithSamePieceUntilUndo)
         {
             DestroyIllegalMoveWarnings(); //destroy then refresh, otherwise old illegal moves stay there even when legal
         }
