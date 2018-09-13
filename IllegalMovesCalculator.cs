@@ -4,47 +4,70 @@ using System.Collections.Generic;
 public class IllegalMovesCalculator
 {
     private RenjuBoard RenjuBoard;
+    private LinkedList<Stone> StonesToCheckAround;
     private Point currentPointBeingChecked;
 
-    public IllegalMovesCalculator(RenjuBoard boardToPerformCalculationsOn)
+    public IllegalMovesCalculator(RenjuBoard boardToPerformCalculationsOn, LinkedList<Stone> stonesToCheckAround)
     {
         RenjuBoard = boardToPerformCalculationsOn;
+        StonesToCheckAround = stonesToCheckAround;
     }
 
     public List<IllegalMove> CalculateIllegalMoves()
     {
         List<IllegalMove> illegalPoints = new List<IllegalMove>();
+        bool[,] PotentialMovesAlreadyChecked = new bool[15,15];
 
-        for (int x = 0; x < GameConfiguration.BOARD_SIZE; x++)
+        foreach (Stone stone in StonesToCheckAround)
         {
-            for (int y = 0; y < GameConfiguration.BOARD_SIZE; y++)
+            //check the adjacent 8 positions around each stone on board to find potential illegal moves (instead of the entire board)
+            int startingX = Math.Max(0, stone.point.X - 2);
+            int endingX = Math.Min(GameConfiguration.BOARD_SIZE - 1, stone.point.X + 2);
+            int startingY = Math.Max(0, stone.point.Y - 2);
+            int endingY = Math.Min(GameConfiguration.BOARD_SIZE - 1, stone.point.Y + 2);
+
+            for (int x = startingX; x <= endingX; x++)
             {
-                currentPointBeingChecked = Point.At(x, y);
+                for (int y = startingY; y <= endingY; y++)
+                {
+                    currentPointBeingChecked = Point.At(x, y);
 
-                if (RenjuBoard.GetPointOnBoardOccupancyState(currentPointBeingChecked) == OccupancyState.Black || 
-                    RenjuBoard.GetPointOnBoardOccupancyState(currentPointBeingChecked) == OccupancyState.White)
-                {
-                    continue; //can't move to an occupied position
-                }
+                    if (PotentialMovesAlreadyChecked[x,y])
+                    {
+                        continue; //already reached this point through a neighbour
+                    }
 
-                if (MoveProducesOverline(currentPointBeingChecked))
-                {
-                    illegalPoints.Add(new IllegalMove(currentPointBeingChecked, IllegalMoveReason.Overline));
-                }
-                else if (MoveProducesFiveToWin(currentPointBeingChecked, OccupancyState.Black))
-                {
-                    //stop checking; five in a row has priority over 3x3 or 4x4, but not overline
-                }
-                else if (CountOpenThrees(currentPointBeingChecked) >= 2)
-                {
-                    illegalPoints.Add(new IllegalMove(currentPointBeingChecked, IllegalMoveReason.Double3));
-                }
-                else if (CountOpenFours(currentPointBeingChecked) >= 2)
-                {
-                    illegalPoints.Add(new IllegalMove(currentPointBeingChecked, IllegalMoveReason.Double4));
+                    if (RenjuBoard.GetPointOnBoardOccupancyState(currentPointBeingChecked) == OccupancyState.Black ||
+                        RenjuBoard.GetPointOnBoardOccupancyState(currentPointBeingChecked) == OccupancyState.White)
+                    {
+                        continue; //can't move to an occupied position
+                    }
+
+                    if (MoveProducesOverline(currentPointBeingChecked))
+                    {
+                        illegalPoints.Add(new IllegalMove(currentPointBeingChecked, IllegalMoveReason.Overline));
+                    }
+                    else if (MoveProducesFiveToWin(currentPointBeingChecked, OccupancyState.Black))
+                    {
+                        //stop checking; five in a row has priority over 3x3 or 4x4, but not overline
+                    }
+                    else if (CountOpenThrees(currentPointBeingChecked) >= 2)
+                    {
+                        illegalPoints.Add(new IllegalMove(currentPointBeingChecked, IllegalMoveReason.Double3));
+                    }
+                    else if (CountOpenFours(currentPointBeingChecked) >= 2)
+                    {
+                        illegalPoints.Add(new IllegalMove(currentPointBeingChecked, IllegalMoveReason.Double4));
+                    }
+                    else
+                    {
+                        //unoccupied position AND not illegal move, add to dp
+                        PotentialMovesAlreadyChecked[x,y] = true;
+                    }
                 }
             }
         }
+        
 
         return illegalPoints;
     }

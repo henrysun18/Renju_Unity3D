@@ -32,7 +32,7 @@ public class RenjuBoard : MonoBehaviour
         }
 
         IsBlacksTurn = true;
-        IllegalMovesCalculator = new IllegalMovesCalculator(this);
+        IllegalMovesCalculator = new IllegalMovesCalculator(this, MovesHistory);
         IllegalMovesController = new IllegalMovesController(this, IllegalMovesCalculator);
 
         MainCamera = GameConfiguration.OrientCameraBasedOnPlatform();
@@ -194,10 +194,15 @@ public class RenjuBoard : MonoBehaviour
 
     private void DisableHaloFromPreviousStoneAndEnableOnThisStone(GameObject stoneObj)
     {
+        if (!GameConfiguration.IsStoneHaloEnabled)
+        {
+            return;
+        }
+
         if (MovesHistory.Count > 0)
         {
             GameObject previousStoneObj = MovesHistory.Last.Value.stoneObj;
-            Component previousStoneHalo = previousStoneObj.GetComponent("Halo");
+            Component previousStoneHalo = previousStoneObj.GetComponent("Halo"); //hacky but only way to enable/disable halos through scripting
             previousStoneHalo.GetType().GetProperty("enabled").SetValue(previousStoneHalo, false, null);
         }
 

@@ -2,6 +2,7 @@
 
 public class GameConfiguration {
     public static bool IsDebugModeWithSamePieceUntilUndo = false;
+    public static bool IsStoneHaloEnabled = true;
     public static bool IsOnlineGame = false;
     public static bool IsWaitingOnPlayerEntryForm = IsOnlineGame;
     public static bool IsAndroidGame = true;
