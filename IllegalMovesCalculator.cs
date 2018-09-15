@@ -5,7 +5,7 @@ public class IllegalMovesCalculator
 {
     private RenjuBoard RenjuBoard;
     private LinkedList<Stone> StonesToCheckAround;
-    private Point currentPointBeingChecked;
+    private Point CurrentPointBeingChecked;
 
     public IllegalMovesCalculator(RenjuBoard boardToPerformCalculationsOn, LinkedList<Stone> stonesToCheckAround)
     {
@@ -16,7 +16,7 @@ public class IllegalMovesCalculator
     public List<IllegalMove> CalculateIllegalMoves()
     {
         List<IllegalMove> illegalPoints = new List<IllegalMove>();
-        bool[,] PotentialMovesAlreadyChecked = new bool[15,15];
+        bool[,] potentialMovesAlreadyChecked = new bool[15,15]; //dynamic programming implementation 
 
         foreach (Stone stone in StonesToCheckAround)
         {
@@ -30,44 +30,43 @@ public class IllegalMovesCalculator
             {
                 for (int y = startingY; y <= endingY; y++)
                 {
-                    currentPointBeingChecked = Point.At(x, y);
+                    CurrentPointBeingChecked = Point.At(x, y);
 
-                    if (PotentialMovesAlreadyChecked[x,y])
+                    if (potentialMovesAlreadyChecked[x,y])
                     {
                         continue; //already reached this point through a neighbour
                     }
 
-                    if (RenjuBoard.GetPointOnBoardOccupancyState(currentPointBeingChecked) == OccupancyState.Black ||
-                        RenjuBoard.GetPointOnBoardOccupancyState(currentPointBeingChecked) == OccupancyState.White)
+                    if (RenjuBoard.GetPointOnBoardOccupancyState(CurrentPointBeingChecked) == OccupancyState.Black ||
+                        RenjuBoard.GetPointOnBoardOccupancyState(CurrentPointBeingChecked) == OccupancyState.White)
                     {
                         continue; //can't move to an occupied position
                     }
 
-                    if (MoveProducesOverline(currentPointBeingChecked))
+                    if (MoveProducesOverline(CurrentPointBeingChecked))
                     {
-                        illegalPoints.Add(new IllegalMove(currentPointBeingChecked, IllegalMoveReason.Overline));
+                        illegalPoints.Add(new IllegalMove(CurrentPointBeingChecked, IllegalMoveReason.Overline));
                     }
-                    else if (MoveProducesFiveToWin(currentPointBeingChecked, OccupancyState.Black))
+                    else if (MoveProducesFiveToWin(CurrentPointBeingChecked, OccupancyState.Black))
                     {
                         //stop checking; five in a row has priority over 3x3 or 4x4, but not overline
                     }
-                    else if (CountOpenThrees(currentPointBeingChecked) >= 2)
+                    else if (CountOpenThrees(CurrentPointBeingChecked) >= 2)
                     {
-                        illegalPoints.Add(new IllegalMove(currentPointBeingChecked, IllegalMoveReason.Double3));
+                        illegalPoints.Add(new IllegalMove(CurrentPointBeingChecked, IllegalMoveReason.Double3));
                     }
-                    else if (CountOpenFours(currentPointBeingChecked) >= 2)
+                    else if (CountOpenFours(CurrentPointBeingChecked) >= 2)
                     {
-                        illegalPoints.Add(new IllegalMove(currentPointBeingChecked, IllegalMoveReason.Double4));
+                        illegalPoints.Add(new IllegalMove(CurrentPointBeingChecked, IllegalMoveReason.Double4));
                     }
                     else
                     {
-                        //unoccupied position AND not illegal move, add to dp
-                        PotentialMovesAlreadyChecked[x,y] = true;
+                        //unoccupied position AND not illegal move
+                        potentialMovesAlreadyChecked[x,y] = true;
                     }
                 }
             }
         }
-        
 
         return illegalPoints;
     }
@@ -218,10 +217,10 @@ public class IllegalMovesCalculator
         Point fourAfter = point.GetPointNStepsAfter(4, dir);
 
         if (RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == OccupancyState.None &&
-           (RenjuBoard.GetPointOnBoardOccupancyState(point) == OccupancyState.Black || currentPointBeingChecked.Equals(point))  &&
-           (RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == OccupancyState.Black || currentPointBeingChecked.Equals(oneAfter)) &&
+           (RenjuBoard.GetPointOnBoardOccupancyState(point) == OccupancyState.Black || CurrentPointBeingChecked.Equals(point))  &&
+           (RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == OccupancyState.Black || CurrentPointBeingChecked.Equals(oneAfter)) &&
             RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == OccupancyState.None &&
-           (RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == OccupancyState.Black || currentPointBeingChecked.Equals(threeAfter)) &&
+           (RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == OccupancyState.Black || CurrentPointBeingChecked.Equals(threeAfter)) &&
             RenjuBoard.GetPointOnBoardOccupancyState(fourAfter) == OccupancyState.None)
         {
             return isNoOverlineHazardSurroundingNBBBBNwithFirstBstartingAt(point, dir);
@@ -239,10 +238,10 @@ public class IllegalMovesCalculator
         Point fourAfter = point.GetPointNStepsAfter(4, dir);
 
         if (RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == OccupancyState.None &&
-           (RenjuBoard.GetPointOnBoardOccupancyState(point) == OccupancyState.Black || currentPointBeingChecked.Equals(point)) &&
+           (RenjuBoard.GetPointOnBoardOccupancyState(point) == OccupancyState.Black || CurrentPointBeingChecked.Equals(point)) &&
             RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == OccupancyState.None &&
-           (RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == OccupancyState.Black || currentPointBeingChecked.Equals(twoAfter)) &&
-           (RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == OccupancyState.Black || currentPointBeingChecked.Equals(threeAfter)) &&
+           (RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == OccupancyState.Black || CurrentPointBeingChecked.Equals(twoAfter)) &&
+           (RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == OccupancyState.Black || CurrentPointBeingChecked.Equals(threeAfter)) &&
             RenjuBoard.GetPointOnBoardOccupancyState(fourAfter) == OccupancyState.None)
         {
             return isNoOverlineHazardSurroundingNBBBBNwithFirstBstartingAt(point, dir);
@@ -261,9 +260,9 @@ public class IllegalMovesCalculator
         Point fourAfter = point.GetPointNStepsAfter(4, dir);
 
         if (RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == OccupancyState.None &&
-           (RenjuBoard.GetPointOnBoardOccupancyState(point) == OccupancyState.Black || currentPointBeingChecked.Equals(point)) &&
-           (RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == OccupancyState.Black || currentPointBeingChecked.Equals(oneAfter)) &&
-           (RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == OccupancyState.Black || currentPointBeingChecked.Equals(twoAfter)) &&
+           (RenjuBoard.GetPointOnBoardOccupancyState(point) == OccupancyState.Black || CurrentPointBeingChecked.Equals(point)) &&
+           (RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == OccupancyState.Black || CurrentPointBeingChecked.Equals(oneAfter)) &&
+           (RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == OccupancyState.Black || CurrentPointBeingChecked.Equals(twoAfter)) &&
             RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == OccupancyState.None)
         {
             if (RenjuBoard.GetPointOnBoardOccupancyState(twoBefore) == OccupancyState.None) //check if open 4 can be made by assuming black piece appended to head of open 3
@@ -341,10 +340,10 @@ public class IllegalMovesCalculator
         Point fourAfter = point.GetPointNStepsAfter(4, dir);
         Point fiveAfter = point.GetPointNStepsAfter(5, dir);
 
-        if ((RenjuBoard.GetPointOnBoardOccupancyState(point) == OccupancyState.Black || currentPointBeingChecked.Equals(point)) &&
-            (RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == OccupancyState.Black || currentPointBeingChecked.Equals(oneAfter)) &&
-            (RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == OccupancyState.Black || currentPointBeingChecked.Equals(twoAfter)) &&
-            (RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == OccupancyState.Black || currentPointBeingChecked.Equals(threeAfter)))
+        if ((RenjuBoard.GetPointOnBoardOccupancyState(point) == OccupancyState.Black || CurrentPointBeingChecked.Equals(point)) &&
+            (RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == OccupancyState.Black || CurrentPointBeingChecked.Equals(oneAfter)) &&
+            (RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == OccupancyState.Black || CurrentPointBeingChecked.Equals(twoAfter)) &&
+            (RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == OccupancyState.Black || CurrentPointBeingChecked.Equals(threeAfter)))
         {
             if (RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == OccupancyState.None) //check if open 4 can be made by assuming black piece appended to tail of open 3
             {
@@ -385,22 +384,22 @@ public class IllegalMovesCalculator
             return false;
         }
 
-        if (RenjuBoard.GetPointOnBoardOccupancyState(point) != OccupancyState.Black && !currentPointBeingChecked.Equals(point) ||
-            RenjuBoard.GetPointOnBoardOccupancyState(fourAfter) != OccupancyState.Black && !currentPointBeingChecked.Equals(fourAfter))
+        if (RenjuBoard.GetPointOnBoardOccupancyState(point) != OccupancyState.Black && !CurrentPointBeingChecked.Equals(point) ||
+            RenjuBoard.GetPointOnBoardOccupancyState(fourAfter) != OccupancyState.Black && !CurrentPointBeingChecked.Equals(fourAfter))
         {
             //ensure leftmost and rightmost pieces are black
             return false;
         }
 
-        if (RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == OccupancyState.Black || currentPointBeingChecked.Equals(oneAfter))
+        if (RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == OccupancyState.Black || CurrentPointBeingChecked.Equals(oneAfter))
         {
             numBlackPiecesFound++;
         }
-        if (RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == OccupancyState.Black || currentPointBeingChecked.Equals(twoAfter))
+        if (RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == OccupancyState.Black || CurrentPointBeingChecked.Equals(twoAfter))
         {
             numBlackPiecesFound++;
         }
-        if (RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == OccupancyState.Black || currentPointBeingChecked.Equals(threeAfter))
+        if (RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == OccupancyState.Black || CurrentPointBeingChecked.Equals(threeAfter))
         {
             numBlackPiecesFound++;
         }

@@ -10,8 +10,8 @@ public class IllegalMovesController {
 
     private RenjuBoard RenjuBoard;
     private IllegalMovesCalculator IllegalMovesCalculator;
-    private static List<IllegalMove> illegalMoves = new List<IllegalMove>();
-    private static List<GameObject> warningObjects = new List<GameObject>();
+    private static List<IllegalMove> IllegalMoves = new List<IllegalMove>();
+    private static List<GameObject> WarningObjects = new List<GameObject>();
 
     public IllegalMovesController(RenjuBoard boardToOperateOn, IllegalMovesCalculator illegalMovesCalculator)
     {
@@ -28,7 +28,7 @@ public class IllegalMovesController {
         }
 
         var watch = System.Diagnostics.Stopwatch.StartNew();
-        illegalMoves = IllegalMovesCalculator.CalculateIllegalMoves();
+        IllegalMoves = IllegalMovesCalculator.CalculateIllegalMoves();
         watch.Stop();
         Debug.Log("milliseconds used to calculate illegal moves: " + watch.ElapsedMilliseconds);
         InstantiateIllegalMoveWarnings();
@@ -36,7 +36,7 @@ public class IllegalMovesController {
 
     public void InstantiateIllegalMoveWarnings()
     {
-        foreach (IllegalMove illegalMove in illegalMoves)
+        foreach (IllegalMove illegalMove in IllegalMoves)
         {
             RenjuBoard.SetPointOnBoardOccupancyState(illegalMove.point, OccupancyState.IllegalMove);
 
@@ -53,15 +53,15 @@ public class IllegalMovesController {
             {
                 case IllegalMoveReason.Double3:
                     warning = UnityEngine.Object.Instantiate(Double3Warning, worldVector3OfIllegalMove, illegalMoveRotation);
-                    warningObjects.Add(warning);
+                    WarningObjects.Add(warning);
                     break;
                 case IllegalMoveReason.Double4:
                     warning = UnityEngine.Object.Instantiate(Double4Warning, worldVector3OfIllegalMove, illegalMoveRotation);
-                    warningObjects.Add(warning);
+                    WarningObjects.Add(warning);
                     break;
                 case IllegalMoveReason.Overline:
                     warning = UnityEngine.Object.Instantiate(OverlineWarning, worldVector3OfIllegalMove, illegalMoveRotation);
-                    warningObjects.Add(warning);
+                    WarningObjects.Add(warning);
                     break;
                 default:
                     throw new Exception("Illegal moves must have a 3x3, 4x4, or overline reason!");
@@ -71,12 +71,12 @@ public class IllegalMovesController {
 
     public void DestroyIllegalMoveWarnings()
     {
-        foreach (IllegalMove illegalMove in illegalMoves)
+        foreach (IllegalMove illegalMove in IllegalMoves)
         {
             RenjuBoard.SetPointOnBoardOccupancyState(illegalMove.point, OccupancyState.None);
         }
 
-        foreach (GameObject warning in warningObjects)
+        foreach (GameObject warning in WarningObjects)
         {
             UnityEngine.Object.Destroy(warning);
         }

@@ -11,8 +11,8 @@ public static class GameConstants
     public const string BLACK_STONE = "BlackStone";
     public const string WHITE_STONE = "WhiteStone";
     public const string MOVE_NUMBER_TEXT = "MoveNumberText";
-    public const string UNDO_BUTTON_BLACK = "UndoButtonBlack";
-    public const string UNDO_BUTTON_WHITE = "UndoButtonWhite";
+    public const string BLACK_USER_INTERFACE = "BlackUserInterface";
+    public const string WHITE_USER_INTERFACE = "WhiteUserInterface";
     public const string OFFICE_PROPS = "OfficeProps";
     public const string BLACK_PROPS = "BlackProps";
     public const string WHITE_PROPS = "WhiteProps";

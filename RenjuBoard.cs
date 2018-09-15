@@ -39,8 +39,8 @@ public class RenjuBoard : MonoBehaviour
         
         BlackStone = Resources.Load<GameObject>(GameConstants.BLACK_STONE);
         WhiteStone = Resources.Load<GameObject>(GameConstants.WHITE_STONE);
-        GameObject.Find(GameConstants.UNDO_BUTTON_BLACK).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
-        GameObject.Find(GameConstants.UNDO_BUTTON_WHITE).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
+        GameObject.Find(GameConstants.BLACK_USER_INTERFACE).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
+        GameObject.Find(GameConstants.WHITE_USER_INTERFACE).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
     }
 
     void OnMouseDown()
@@ -68,9 +68,12 @@ public class RenjuBoard : MonoBehaviour
             {
                 AttemptToPlaceStone(myMove); 
             }
-            else if (FirebaseDao.IsMyTurn() && AttemptToPlaceStone(myMove)) //ONLINE MULTIPLAYER
+            else if (!GameConfiguration.IsWaitingOnPlayerEntryForm && FirebaseDao.IsMyTurn()) //ONLINE MULTIPLAYER
             {
-                StartCoroutine(FirebaseDao.SetTurnOverAfterMyMove(myMove));
+                if (AttemptToPlaceStone(myMove))
+                {
+                    StartCoroutine(FirebaseDao.SetTurnOverAfterMyMove(myMove));
+                }
             }
         }
     }
@@ -134,7 +137,6 @@ public class RenjuBoard : MonoBehaviour
                 if (IllegalMovesCalculator.MoveProducesFiveToWin(gridPoint, OccupancyState.Black))
                 {
                     SetWinner(PlayerColour.Black);
-                    return true; //don't show illegal moves
                 }
             }
             else
@@ -143,7 +145,6 @@ public class RenjuBoard : MonoBehaviour
                 if (IllegalMovesCalculator.MoveProducesFiveToWin(gridPoint, OccupancyState.White))
                 {
                     SetWinner(PlayerColour.White);
-                    return true;
                 }
             }
 
@@ -194,11 +195,6 @@ public class RenjuBoard : MonoBehaviour
 
     private void DisableHaloFromPreviousStoneAndEnableOnThisStone(GameObject stoneObj)
     {
-        if (!GameConfiguration.IsStoneHaloEnabled)
-        {
-            return;
-        }
-
         if (MovesHistory.Count > 0)
         {
             GameObject previousStoneObj = MovesHistory.Last.Value.stoneObj;
@@ -247,6 +243,7 @@ public class RenjuBoard : MonoBehaviour
             WinMessage = Instantiate(WinMessage);
         }
 
+        IllegalMovesController.DestroyIllegalMoveWarnings();
         ShowMoveHistory();
     }
 

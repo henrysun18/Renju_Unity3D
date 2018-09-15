@@ -4,7 +4,7 @@
 
     public bool IsBlacksTurn()
     {
-        return GameState.IsBlacksTurn;
+        return GameState != null && GameState.IsBlacksTurn;
     }
 
     public void EndTurn()
@@ -14,11 +14,19 @@
 
     public bool IsUndoButtonPressedByBlack()
     {
+        if (GameState == null || GameState.UndoStates == null)
+        {
+            return false;
+        }
         return GameState.UndoStates.IsUndoButtonPressedByBlack;
     }
 
     public bool IsUndoButtonPressedByWhite()
     {
+        if (GameState == null || GameState.UndoStates == null)
+        {
+            return false;
+        }
         return GameState.UndoStates.IsUndoButtonPressedByWhite;
     }
 
@@ -34,6 +42,10 @@
 
     public Point OpponentsLastMove()
     {
+        if (GameState == null)
+        {
+            return Point.At(-1, -1);
+        }
         return GameState.OpponentsLastMove;
     }
 
