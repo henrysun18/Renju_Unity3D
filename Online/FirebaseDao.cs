@@ -42,7 +42,7 @@ public class FirebaseDao : MonoBehaviour
         {
             NullValueHandling = NullValueHandling.Ignore, //need to be able to update some properties of RoomDto without overwriting others
         };
-        InvokeRepeating("SyncGameWithDB", 0.2f, 0.5f); //0.2s delay, repeat every 0.5s
+        InvokeRepeating("SyncGameWithDB", 0.2f, 1f); //0.2s delay, repeat every 0.5s
     }
 
     void SyncGameWithDB()
@@ -112,8 +112,18 @@ public class FirebaseDao : MonoBehaviour
                 }
                 OnlineRoomInfo = tmpRoomDto;
 
-                GameObject.Find(GameConstants.P1_LABEL_GAMEOBJECT).GetComponent<Text>().text = "Black: " + OnlineRoomInfo.Player1Name();
-                GameObject.Find(GameConstants.P2_LABEL_GAMEOBJECT).GetComponent<Text>().text = "White: " + OnlineRoomInfo.Player2Name();
+                GameObject.Find(GameConstants.P1_LABEL_GAMEOBJECT).GetComponent<Text>().text = OnlineRoomInfo.Player1Name();
+                GameObject.Find(GameConstants.P2_LABEL_GAMEOBJECT).GetComponent<Text>().text = OnlineRoomInfo.Player2Name();
+
+                if (tmpRoomDto.GameState.UndoStates.IsUndoButtonPressedByBlack ||
+                    tmpRoomDto.GameState.UndoStates.IsUndoButtonPressedByWhite || IsUndoPressed)
+                {
+                    GameObject.Find(GameConstants.SOLO_UNDO_BUTTON).GetComponent<Button>().enabled = false; //prevent undo button spam, reducing bugs
+                }
+                else
+                {
+                    GameObject.Find(GameConstants.SOLO_UNDO_BUTTON).GetComponent<Button>().enabled = true;
+                }
             }
         }
     }

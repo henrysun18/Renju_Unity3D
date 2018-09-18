@@ -5,14 +5,13 @@ public class GameConfiguration {
     public static bool IsDebugModeWithSamePieceUntilUndo = false;
 
     //Sets camera to be in portrait mode and prevent screen timeout
-    public static bool IsAndroidGame = true;
+    public static bool IsAndroidGame = false;
 
     //determines whether to show PlayerEntryForm, and restrict player to only one colour
     public static bool IsOnlineGame = false;
 
     //don't poll db if user hasn't joined an online match
     public static bool IsWaitingOnPlayerEntryForm = IsOnlineGame;
-
 
     public static readonly int BOARD_SIZE = 15;
 

@@ -39,8 +39,16 @@ public class RenjuBoard : MonoBehaviour
         
         BlackStone = Resources.Load<GameObject>(GameConstants.BLACK_STONE);
         WhiteStone = Resources.Load<GameObject>(GameConstants.WHITE_STONE);
-        GameObject.Find(GameConstants.BLACK_USER_INTERFACE).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
-        GameObject.Find(GameConstants.WHITE_USER_INTERFACE).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
+
+        if (GameConfiguration.IsAndroidGame)
+        {
+            GameObject.Find(GameConstants.BLACK_UNDO_BUTTON).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
+            GameObject.Find(GameConstants.WHITE_UNDO_BUTTON).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
+        }
+        else
+        {
+            GameObject.Find(GameConstants.SOLO_UNDO_BUTTON).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
+        }
     }
 
     void OnMouseDown()
@@ -153,7 +161,7 @@ public class RenjuBoard : MonoBehaviour
                 IsBlacksTurn = !IsBlacksTurn; //next guy's turn
             }
 
-            if (IsBlacksTurn) IllegalMovesController.ShowIllegalMoves();
+            if (IsBlacksTurn && !IsGameOver) IllegalMovesController.ShowIllegalMoves();
             else IllegalMovesController.DestroyIllegalMoveWarnings();
 
             return true; //successfully placed stoneObj
@@ -243,7 +251,6 @@ public class RenjuBoard : MonoBehaviour
             WinMessage = Instantiate(WinMessage);
         }
 
-        IllegalMovesController.DestroyIllegalMoveWarnings();
         ShowMoveHistory();
     }
 

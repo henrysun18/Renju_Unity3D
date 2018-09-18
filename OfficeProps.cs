@@ -5,22 +5,13 @@ using UnityEngine;
 
 public class OfficeProps : MonoBehaviour
 {
-    public Object officePropsPrefab;
-
 	// Attach this script to OfficeProps to enable point and click interaction with the props on table
 	void Start () {
 	    foreach (Transform setOfProps in transform) //BlackProps and WhiteProps
 	    {
 	        foreach (Transform prop in setOfProps)
 	        {
-	            if (prop.GetComponent<BoxCollider>() == null)
-	            {
-	                prop.gameObject.AddComponent<BoxCollider>(); //simple collider even for lightbulb and pens
-	            }
-	            else
-	            {
-	                prop.GetComponent<BoxCollider>().enabled = true; //had to manually set colliders for parent objects
-	            }
+	            prop.GetComponent<BoxCollider>().enabled = true; //have to manually set boxcolliders for props, since some models don't scale properly
                 prop.gameObject.AddComponent<OfficeProp>();
                 prop.gameObject.AddComponent<Rigidbody>();
 	            prop.gameObject.tag = GameConstants.PROP;
@@ -64,6 +55,7 @@ public class OfficeProp : MonoBehaviour
         original = Instantiate(gameObject);
         original.SetActive(false); //hide the temporary object storing original transform values
     }
+
     void OnMouseDown()
     {
         FlyAway();
@@ -71,13 +63,13 @@ public class OfficeProp : MonoBehaviour
 
     public void FlyAway()
     {
-        float speedTowardsRightSideOfTable = negateIfBlack * Random.value*30 - 5;
+        float speedTowardsRightSideOfTable = negateIfBlack * (Random.value*15 + 5);
         float speedTowardsTopSideOfTable = Random.value*10 - 5; //(-5, 5)
         float speedTowardsTheAir = Random.value * 20 + 5;
 
-        float angularSpeedX = Random.value * 20 - 5;
-        float angularSpeedY = Random.value * 20 - 5;
-        float angularSpeedZ = Random.value * 20 - 5;
+        float angularSpeedX = Random.value * 30 - 15;
+        float angularSpeedY = Random.value * 30 - 15;
+        float angularSpeedZ = Random.value * 30 - 15;
 
         GetComponent<Rigidbody>().velocity = new Vector3(speedTowardsRightSideOfTable, speedTowardsTheAir, speedTowardsTopSideOfTable);
         GetComponent<Rigidbody>().angularVelocity = new Vector3(angularSpeedX, angularSpeedY, angularSpeedZ);
