@@ -43,13 +43,13 @@ public class IllegalMovesCalculator
                         continue; //can't move to an occupied position
                     }
 
-                    if (MoveProducesOverline(CurrentPointBeingChecked))
+                    if (MoveProducesFiveToWin(CurrentPointBeingChecked, OccupancyState.Black))
+                    {
+                        //stop checking; if it's a winning move, it's automatically allowed (make sure this move doesn't product overline though)
+                    }
+                    else if(MoveProducesOverline(CurrentPointBeingChecked))
                     {
                         illegalPoints.Add(new IllegalMove(CurrentPointBeingChecked, IllegalMoveReason.Overline));
-                    }
-                    else if (MoveProducesFiveToWin(CurrentPointBeingChecked, OccupancyState.Black))
-                    {
-                        //stop checking; five in a row has priority over 3x3 or 4x4, but not overline
                     }
                     else if (CountOpenThrees(CurrentPointBeingChecked) >= 2)
                     {
@@ -124,6 +124,7 @@ public class IllegalMovesCalculator
     {
         foreach (Direction dir in Enum.GetValues(typeof(Direction)))
         {
+            Point fiveBefore = point.GetPointNStepsAfter(-5, dir);
             Point fourBefore = point.GetPointNStepsAfter(-4, dir);
             Point threeBefore = point.GetPointNStepsAfter(-3, dir);
             Point twoBefore = point.GetPointNStepsAfter(-2, dir);
@@ -132,43 +133,54 @@ public class IllegalMovesCalculator
             Point twoAfter = point.GetPointNStepsAfter(2, dir);
             Point threeAfter = point.GetPointNStepsAfter(3, dir);
             Point fourAfter = point.GetPointNStepsAfter(4, dir);
+            Point fiveAfter = point.GetPointNStepsAfter(5, dir);
 
-            if (RenjuBoard.GetPointOnBoardOccupancyState(fourBefore) == playerColourOccupancyState &&
+            if (RenjuBoard.GetPointOnBoardOccupancyState(fiveBefore) != playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(fourBefore) == playerColourOccupancyState &&
                 RenjuBoard.GetPointOnBoardOccupancyState(threeBefore) == playerColourOccupancyState &&
                 RenjuBoard.GetPointOnBoardOccupancyState(twoBefore) == playerColourOccupancyState &&
-                RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == playerColourOccupancyState)
+                RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) != playerColourOccupancyState)
             {
                 return true;
             }
 
-            if (RenjuBoard.GetPointOnBoardOccupancyState(threeBefore) == playerColourOccupancyState &&
+            if (RenjuBoard.GetPointOnBoardOccupancyState(fourBefore) != playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(threeBefore) == playerColourOccupancyState &&
                 RenjuBoard.GetPointOnBoardOccupancyState(twoBefore) == playerColourOccupancyState &&
                 RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == playerColourOccupancyState &&
-                RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == playerColourOccupancyState)
+                RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) != playerColourOccupancyState)
             {
                 return true;
             }
 
-            if (RenjuBoard.GetPointOnBoardOccupancyState(twoBefore) == playerColourOccupancyState &&
+            if (RenjuBoard.GetPointOnBoardOccupancyState(threeBefore) != playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(twoBefore) == playerColourOccupancyState &&
                 RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == playerColourOccupancyState &&
                 RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == playerColourOccupancyState &&
-                RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == playerColourOccupancyState)
+                RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) != playerColourOccupancyState)
             {
                 return true;
             }
 
-            if (RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == playerColourOccupancyState &&
+            if (RenjuBoard.GetPointOnBoardOccupancyState(twoBefore) != playerColourOccupancyState && 
+                RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) == playerColourOccupancyState &&
                 RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == playerColourOccupancyState &&
                 RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == playerColourOccupancyState &&
-                RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == playerColourOccupancyState)
+                RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(fourAfter) != playerColourOccupancyState)
             {
                 return true;
             }
 
-            if (RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == playerColourOccupancyState &&
+            if (RenjuBoard.GetPointOnBoardOccupancyState(oneBefore) != playerColourOccupancyState && 
+                RenjuBoard.GetPointOnBoardOccupancyState(oneAfter) == playerColourOccupancyState &&
                 RenjuBoard.GetPointOnBoardOccupancyState(twoAfter) == playerColourOccupancyState &&
                 RenjuBoard.GetPointOnBoardOccupancyState(threeAfter) == playerColourOccupancyState &&
-                RenjuBoard.GetPointOnBoardOccupancyState(fourAfter) == playerColourOccupancyState)
+                RenjuBoard.GetPointOnBoardOccupancyState(fourAfter) == playerColourOccupancyState &&
+                RenjuBoard.GetPointOnBoardOccupancyState(fiveAfter) != playerColourOccupancyState)
             {
                 return true;
             }
