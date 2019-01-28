@@ -7,8 +7,10 @@ public class GameConfiguration {
     //Sets camera to be in portrait mode and prevent screen timeout
     public static bool IsAndroidGame = false;
 
-    //determines whether to show PlayerEntryForm, and restrict player to only one colour
+    //determines whether to show OnlineRoomSelection, and restrict player to only one colour
     public static bool IsOnlineGame = false;
+    public static string ServerUrl = "http://localhost:8080/";
+
 
     //don't poll db if user hasn't joined an online match
     public static bool IsWaitingOnPlayerEntryForm = IsOnlineGame;

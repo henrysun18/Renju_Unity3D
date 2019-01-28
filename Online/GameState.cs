@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-public class GameStateDto {
+public class GameState {
 
     public bool IsBlacksTurn { get; set; }
     public UndoStatesDto UndoStates { get; set; }

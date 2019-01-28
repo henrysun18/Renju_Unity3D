@@ -3,7 +3,11 @@ guid: 1ec055bc18b2f45439a0308a2c50c198
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - BlackWinMessage: {fileID: 1497341381831786, guid: 43b32c7d1476f644a9734004c26cef10,
+      type: 2}
+  - WhiteWinMessage: {fileID: 1748166288421900, guid: 417f477552770b242b3973b5216fe656,
+      type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

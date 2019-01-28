@@ -2,14 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum PlayerColour
-{
-    Black,
-    White
-}
-
+// will be used to talk to server
 public enum PlayerNumber
 {
+    Neither,
     One,
     Two
 }
@@ -36,10 +32,4 @@ public enum Direction
     SW_NE,
     W_E,
     NW_SE
-}
-
-public enum HalfOpenConfig
-{
-    NBBBN,
-    NBBBBN
 }

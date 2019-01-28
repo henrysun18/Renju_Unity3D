@@ -6,21 +6,24 @@ using UnityEngine.UI;
 public class RenjuBoard : MonoBehaviour
 {
     private Camera MainCamera;
+    public GameObject BlackStone;
+    public GameObject WhiteStone;
+    public Button SoloUndoButton;
+    public Button BlackUndoButton;
+    public Button WhiteUndoButton;
     public GameObject BlackWinMessage;
     public GameObject WhiteWinMessage;
 
     public static bool IsGameOver;
     public static bool IsBlacksTurn;
 
-    private FirebaseDao FirebaseDao;
+    private OnlineMultiplayerClient _onlineMultiplayerClient;
     private IllegalMovesCalculator IllegalMovesCalculator;
     private IllegalMovesController IllegalMovesController;
 
     private OccupancyState[,] Board = new OccupancyState[GameConfiguration.BOARD_SIZE, GameConfiguration.BOARD_SIZE];
     private LinkedList<Stone> MovesHistory = new LinkedList<Stone>();
 
-    private static GameObject BlackStone;
-    private static GameObject WhiteStone;
     private GameObject WinMessage;
 
     // Use this for initialization
@@ -28,7 +31,7 @@ public class RenjuBoard : MonoBehaviour
     {
         if (GameConfiguration.IsOnlineGame)
         {
-            FirebaseDao = gameObject.AddComponent<FirebaseDao>(); //adds multiplayer script if necessary
+            _onlineMultiplayerClient = gameObject.AddComponent<OnlineMultiplayerClient>(); //adds multiplayer script if necessary
         }
 
         IsBlacksTurn = true;
@@ -36,24 +39,14 @@ public class RenjuBoard : MonoBehaviour
         IllegalMovesController = new IllegalMovesController(this, IllegalMovesCalculator);
 
         MainCamera = GameConfiguration.OrientCameraBasedOnPlatform();
-        
-        BlackStone = Resources.Load<GameObject>(GameConstants.BLACK_STONE);
-        WhiteStone = Resources.Load<GameObject>(GameConstants.WHITE_STONE);
 
-        if (GameConfiguration.IsAndroidGame)
-        {
-            GameObject.Find(GameConstants.BLACK_UNDO_BUTTON).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
-            GameObject.Find(GameConstants.WHITE_UNDO_BUTTON).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
-        }
-        else
-        {
-            GameObject.Find(GameConstants.SOLO_UNDO_BUTTON).GetComponent<Button>().onClick.AddListener(OnUndoButtonPress);
-        }
+        BlackUndoButton.onClick.AddListener(OnUndoButtonPress);
+        WhiteUndoButton.onClick.AddListener(OnUndoButtonPress);
+        SoloUndoButton.onClick.AddListener(OnUndoButtonPress);
     }
 
     void OnMouseDown()
     {
-
         if (IsGameOver)
         {
             ResetGameState();
@@ -76,13 +69,13 @@ public class RenjuBoard : MonoBehaviour
             {
                 AttemptToPlaceStone(myMove); 
             }
-            else if (!GameConfiguration.IsWaitingOnPlayerEntryForm && FirebaseDao.IsMyTurn()) //ONLINE MULTIPLAYER
+            /*else if (!GameConfiguration.IsWaitingOnPlayerEntryForm && _onlineMultiplayerClient.IsMyTurn()) //ONLINE MULTIPLAYER
             {
                 if (AttemptToPlaceStone(myMove))
                 {
-                    StartCoroutine(FirebaseDao.SetTurnOverAfterMyMove(myMove));
+                    StartCoroutine(_onlineMultiplayerClient.SetTurnOverAfterMyMove(myMove));
                 }
-            }
+            }*/
         }
     }
 
@@ -95,14 +88,7 @@ public class RenjuBoard : MonoBehaviour
 
         if (GameConfiguration.IsOnlineGame)
         {
-            if (!IsGameOver && FirebaseDao.IsUndoButtonAvailable())
-            {
-                StartCoroutine(FirebaseDao.PressUndoButton());
-            }
-            else
-            {
-                return; //disable undo button until undo button is acknowledged
-            }
+
         }
 
         UndoOneMove();
@@ -144,7 +130,7 @@ public class RenjuBoard : MonoBehaviour
                 SetPointOnBoardOccupancyState(gridPoint, OccupancyState.Black);
                 if (IllegalMovesCalculator.MoveProducesFiveToWin(gridPoint, OccupancyState.Black))
                 {
-                    SetWinner(PlayerColour.Black);
+                    SetWinner(PlayerNumber.One);
                 }
             }
             else
@@ -152,7 +138,7 @@ public class RenjuBoard : MonoBehaviour
                 SetPointOnBoardOccupancyState(gridPoint, OccupancyState.White);
                 if (IllegalMovesCalculator.MoveProducesFiveToWin(gridPoint, OccupancyState.White))
                 {
-                    SetWinner(PlayerColour.White);
+                    SetWinner(PlayerNumber.Two);
                 }
             }
 
@@ -214,16 +200,16 @@ public class RenjuBoard : MonoBehaviour
         stoneHalo.GetType().GetProperty("enabled").SetValue(stoneHalo, true, null);
     }
 
-    void SetWinner(PlayerColour pc)
+    void SetWinner(PlayerNumber playerNumber)
     {
         IsGameOver = true;
 
-        if (pc == PlayerColour.Black)
+        if (playerNumber == PlayerNumber.One)
         {
             WinMessage = BlackWinMessage;
             if (GameConfiguration.IsOnlineGame)
             {
-                WinMessage.GetComponent<TextMesh>().text = FirebaseDao.OnlineRoomInfo.PlayerInfo.Player1 + " Wins!";
+                WinMessage.GetComponent<TextMesh>().text = OnlineMultiplayerClient.OnlineRoomInfo.RoomSummary.P1 + " Wins!";
             }
         }
         else
@@ -231,13 +217,13 @@ public class RenjuBoard : MonoBehaviour
             WinMessage = WhiteWinMessage;
             if (GameConfiguration.IsOnlineGame)
             {
-                WinMessage.GetComponent<TextMesh>().text = FirebaseDao.OnlineRoomInfo.PlayerInfo.Player2 + " Wins!";
+                WinMessage.GetComponent<TextMesh>().text = OnlineMultiplayerClient.OnlineRoomInfo.RoomSummary.P2 + " Wins!";
             }
         }
 
         if (GameConfiguration.IsAndroidGame) //rotate towards winner if game is played in portrait mode
         {
-            if (pc == PlayerColour.Black)
+            if (playerNumber == PlayerNumber.One)
             {
                 WinMessage = Instantiate(WinMessage, WinMessage.transform.position, GameConstants.QuaternionTowardsBlack);
             }
@@ -295,9 +281,5 @@ public class RenjuBoard : MonoBehaviour
 
         IsGameOver = false;
         IsBlacksTurn = true;
-        if (GameConfiguration.IsOnlineGame)
-        {
-            PlayerEntryForm.CreateNewOnlineGame();
-        }
     }
 }

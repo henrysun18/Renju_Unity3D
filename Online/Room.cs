@@ -1,6 +1,6 @@
-﻿public class RoomDto {
-    public GameStateDto GameState { get; set; }
-    public PlayerInfoDto PlayerInfo { get; set; }
+﻿public class Room {
+    public GameState GameState { get; set; }
+    public RoomSummary RoomSummary { get; set; }
 
     public bool IsBlacksTurn()
     {
@@ -56,21 +56,21 @@
 
     public string Player1Name()
     {
-        return PlayerInfo.Player1;
+        return RoomSummary.P1;
     }
 
     public string Player2Name()
     {
-        return PlayerInfo.Player2;
+        return RoomSummary.P2;
     }
 
     public void SetPlayer1Name(string name)
     {
-        PlayerInfo.Player1 = name;
+        RoomSummary.P1 = name;
     }
 
     public void SetPlayer2Name(string name)
     {
-        PlayerInfo.Player2 = name;
+        RoomSummary.P2 = name;
     }
 }
