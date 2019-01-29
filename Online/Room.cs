@@ -2,6 +2,12 @@
     public GameState GameState { get; set; }
     public RoomSummary RoomSummary { get; set; }
 
+    public Room()
+    {
+        GameState = new GameState();
+        RoomSummary = new RoomSummary();
+    }
+
     public bool IsBlacksTurn()
     {
         return GameState != null && GameState.IsBlacksTurn;
@@ -54,22 +60,22 @@
         GameState.OpponentsLastMove = move;
     }
 
-    public string Player1Name()
+    public string P1()
     {
         return RoomSummary.P1;
     }
 
-    public string Player2Name()
+    public string P2()
     {
         return RoomSummary.P2;
     }
 
-    public void SetPlayer1Name(string name)
+    public void SetP1(string name)
     {
         RoomSummary.P1 = name;
     }
 
-    public void SetPlayer2Name(string name)
+    public void SetP2(string name)
     {
         RoomSummary.P2 = name;
     }

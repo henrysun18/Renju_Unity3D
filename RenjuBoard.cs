@@ -69,7 +69,7 @@ public class RenjuBoard : MonoBehaviour
             {
                 AttemptToPlaceStone(myMove); 
             }
-            /*else if (!GameConfiguration.IsWaitingOnPlayerEntryForm && _onlineMultiplayerClient.IsMyTurn()) //ONLINE MULTIPLAYER
+            /*else if (!GameConfiguration.IsInOnlineLobby && _onlineMultiplayerClient.IsMyTurn()) //ONLINE MULTIPLAYER
             {
                 if (AttemptToPlaceStone(myMove))
                 {

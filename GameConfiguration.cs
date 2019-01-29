@@ -8,12 +8,8 @@ public class GameConfiguration {
     public static bool IsAndroidGame = false;
 
     //determines whether to show OnlineRoomSelection, and restrict player to only one colour
-    public static bool IsOnlineGame = false;
+    public static bool IsOnlineGame = true;
     public static string ServerUrl = "http://localhost:8080/";
-
-
-    //don't poll db if user hasn't joined an online match
-    public static bool IsWaitingOnPlayerEntryForm = IsOnlineGame;
 
     public static readonly int BOARD_SIZE = 15;
 

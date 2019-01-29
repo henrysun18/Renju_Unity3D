@@ -6,8 +6,9 @@ using UnityEngine.UI;
 
 public class OnlineMultiplayerClient : MonoBehaviour
 {
-    public static PlayerNumber OnlinePlayerNumber = PlayerNumber.One;
-    public static Room OnlineRoomInfo;
+    public static PlayerNumber OnlinePlayerNumber = PlayerNumber.Neither;
+    public static int OnlineRoomNumber = -1;
+    public static Room OnlineRoomInfo = new Room();
 
 
     public IEnumerator IsMyTurn(int roomNumber, PlayerNumber playerNumber)
