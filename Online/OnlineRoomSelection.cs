@@ -27,6 +27,8 @@ public class OnlineRoomSelection : MonoBehaviour
             animals = AnimalsTextFile.text.Split();
 
             InvokeRepeating("RefreshLobbyIfNotInGame", 0.2f, 3f); //refresh every 3s
+            InvokeRepeating("RefreshRoomIfWaitingForOpponent", 0.2f, 1f);
+            InvokeRepeating("KeepConnectionToServerAlive", 0.2f, 5f); //evict player if this is not called after a while
         }
         else
         {
@@ -40,9 +42,26 @@ public class OnlineRoomSelection : MonoBehaviour
 
     void RefreshLobbyIfNotInGame()
     {
-        if (string.IsNullOrEmpty(OnlineMultiplayerClient.OnlineRoomInfo.P1()) || string.IsNullOrEmpty(OnlineMultiplayerClient.OnlineRoomInfo.P2()))
+        if (OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.Neither)
         {
             StartCoroutine(RefreshLobby());
+        }
+    }
+
+    void RefreshRoomIfWaitingForOpponent()
+    {
+        if (OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.One && string.IsNullOrEmpty(OnlineMultiplayerClient.OnlineRoomInfo.P2()) ||
+            OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.Two && string.IsNullOrEmpty(OnlineMultiplayerClient.OnlineRoomInfo.P1()))
+        {
+            StartCoroutine(RefreshRoom());
+        }
+    }
+
+    void KeepConnectionToServerAlive()
+    {
+        if (OnlineMultiplayerClient.OnlinePlayerNumber != PlayerNumber.Neither)
+        {
+            StartCoroutine(KeepAlive());
         }
     }
 
@@ -56,44 +75,55 @@ public class OnlineRoomSelection : MonoBehaviour
             if (www.isDone) 
             {
                 RoomSummaries = JsonConvert.DeserializeObject<List<RoomSummary>>(www.text);
-
-                if (OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.Neither)
+                
+                int currentRoomIndex = 0;
+                foreach (Transform roomTransform in RoomsGameObject.transform)
                 {
-                    // user is still outside in the lobby
-                    int currentRoomIndex = 0;
-                    foreach (Transform roomTransform in RoomsGameObject.transform)
+                    foreach (Transform t in roomTransform)
                     {
-                        foreach (Transform t in roomTransform)
+                        if (t.name == "BlackPlayerName")
                         {
-                            if (t.name == "BlackPlayerName")
-                            {
-                                t.GetComponent<Text>().text = RoomSummaries[currentRoomIndex].P1;
-                            }
-                            if (t.name == "WhitePlayerName")
-                            {
-                                t.GetComponent<Text>().text = RoomSummaries[currentRoomIndex].P2;
-                            }
-                            if (t.name == "JoinButton")
-                            {
-                                string buttonText = t.GetChild(0).GetComponent<Text>().text;
-                                int roomNumber = Int32.Parse(buttonText.Substring(buttonText.IndexOf('#') + 1));
-                                t.GetComponent<Button>().onClick.AddListener(() => OnJoinButtonPress(roomNumber));
-                            }
+                            t.GetComponent<Text>().text = RoomSummaries[currentRoomIndex].P1;
                         }
-                        currentRoomIndex++;
+                        if (t.name == "WhitePlayerName")
+                        {
+                            t.GetComponent<Text>().text = RoomSummaries[currentRoomIndex].P2;
+                        }
+                        if (t.name == "JoinButton")
+                        {
+                            string buttonText = t.GetChild(0).GetComponent<Text>().text;
+                            int roomNumber = Int32.Parse(buttonText.Substring(buttonText.IndexOf('#') + 1));
+                            t.GetComponent<Button>().onClick.AddListener(() => OnJoinButtonPress(roomNumber));
+                        }
                     }
-                }
-                else
-                {
-                    // user already joined a room and is waiting for other player
-                    string P1 = RoomSummaries[OnlineMultiplayerClient.OnlineRoomNumber].P1;
-                    string P2 = RoomSummaries[OnlineMultiplayerClient.OnlineRoomNumber].P2;
-                    OnlineMultiplayerClient.OnlineRoomInfo.SetP1(P1);
-                    OnlineMultiplayerClient.OnlineRoomInfo.SetP2(P2);
-                    P1Label.text = P1;
-                    P2Label.text = P2;
+                    currentRoomIndex++;
                 }
             }
+        }
+    }
+
+    IEnumerator RefreshRoom()
+    {
+        using (WWW www = new WWW(GameConfiguration.ServerUrl + "refresh-room?room=" + OnlineMultiplayerClient.OnlineRoomNumber))
+        {
+            yield return www;
+            if (www.isDone)
+            {
+                RoomSummary response = JsonConvert.DeserializeObject<RoomSummary>(www.text);
+
+                OnlineMultiplayerClient.OnlineRoomInfo.SetP1(response.P1);
+                OnlineMultiplayerClient.OnlineRoomInfo.SetP2(response.P2);
+                P1Label.text = response.P1;
+                P2Label.text = response.P2;
+            }
+        }
+    }
+
+    IEnumerator KeepAlive()
+    {
+        using (WWW www = new WWW(GameConfiguration.ServerUrl + "keep-alive?room=" + OnlineMultiplayerClient.OnlineRoomNumber + "&player-number=" + OnlineMultiplayerClient.OnlinePlayerNumber))
+        {
+            yield return www;
         }
     }
 

@@ -200,7 +200,7 @@ public class RenjuBoard : MonoBehaviour
         stoneHalo.GetType().GetProperty("enabled").SetValue(stoneHalo, true, null);
     }
 
-    void SetWinner(PlayerNumber playerNumber)
+    void SetWinner(int playerNumber)
     {
         IsGameOver = true;
 

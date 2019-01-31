@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // will be used to talk to server
-public enum PlayerNumber
+public class PlayerNumber
 {
-    Neither,
-    One,
-    Two
+    public static int Neither = 0;
+    public static int One = 1;
+    public static int Two = 2;
 }
 
 public enum IllegalMoveReason

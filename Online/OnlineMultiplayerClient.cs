@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class OnlineMultiplayerClient : MonoBehaviour
 {
-    public static PlayerNumber OnlinePlayerNumber = PlayerNumber.Neither;
+    public static int OnlinePlayerNumber = PlayerNumber.Neither;
     public static int OnlineRoomNumber = -1;
     public static Room OnlineRoomInfo = new Room();
 
