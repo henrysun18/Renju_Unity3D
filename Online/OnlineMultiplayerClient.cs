@@ -37,4 +37,11 @@ public class OnlineMultiplayerClient : MonoBehaviour
     {
         return OnlineRoomInfo.OpponentsLastMove();
     }
+
+    public static void ResetGame()
+    {
+        OnlinePlayerNumber = PlayerNumber.Neither;
+        OnlineRoomNumber = -1;
+        OnlineRoomInfo = new Room();
+    }
 }

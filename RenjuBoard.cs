@@ -5,7 +5,6 @@ using UnityEngine.UI;
 
 public class RenjuBoard : MonoBehaviour
 {
-    private Camera MainCamera;
     public GameObject BlackStone;
     public GameObject WhiteStone;
     public Button SoloUndoButton;
@@ -16,27 +15,25 @@ public class RenjuBoard : MonoBehaviour
 
     public static bool IsGameOver;
     public static bool IsBlacksTurn;
+    public static GameObject WinMessage;
 
-    private OnlineMultiplayerClient _onlineMultiplayerClient;
+    private Camera MainCamera;
     private IllegalMovesCalculator IllegalMovesCalculator;
     private IllegalMovesController IllegalMovesController;
+    private OnlineRoomSelection OnlineRoomSelection;
 
     private OccupancyState[,] Board = new OccupancyState[GameConfiguration.BOARD_SIZE, GameConfiguration.BOARD_SIZE];
     private LinkedList<Stone> MovesHistory = new LinkedList<Stone>();
 
-    private GameObject WinMessage;
 
     // Use this for initialization
     void Start ()
     {
-        if (GameConfiguration.IsOnlineGame)
-        {
-            _onlineMultiplayerClient = gameObject.AddComponent<OnlineMultiplayerClient>(); //adds multiplayer script if necessary
-        }
-
         IsBlacksTurn = true;
         IllegalMovesCalculator = new IllegalMovesCalculator(this, MovesHistory);
         IllegalMovesController = new IllegalMovesController(this, IllegalMovesCalculator);
+        OnlineRoomSelection = GetComponent<OnlineRoomSelection>();
+        OnlineRoomSelection.Init(this);
 
         MainCamera = GameConfiguration.OrientCameraBasedOnPlatform();
 
@@ -200,7 +197,7 @@ public class RenjuBoard : MonoBehaviour
         stoneHalo.GetType().GetProperty("enabled").SetValue(stoneHalo, true, null);
     }
 
-    void SetWinner(int playerNumber)
+    public void SetWinner(int playerNumber)
     {
         IsGameOver = true;
 
@@ -281,5 +278,11 @@ public class RenjuBoard : MonoBehaviour
 
         IsGameOver = false;
         IsBlacksTurn = true;
+
+        if (GameConfiguration.IsOnlineGame)
+        {
+            OnlineMultiplayerClient.ResetGame();
+            OnlineRoomSelection.ExitBackToLobby();
+        }
     }
 }

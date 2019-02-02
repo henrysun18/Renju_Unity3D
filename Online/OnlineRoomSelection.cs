@@ -14,10 +14,16 @@ public class OnlineRoomSelection : MonoBehaviour
     public Text P1Label;
     public Text P2Label;
 
+    private static RenjuBoard RenjuBoard;
     private static List<RoomSummary> RoomSummaries;
 
     private static TextAsset AnimalsTextFile;
     private static string[] animals;
+
+    public void Init(RenjuBoard renjuBoard)
+    {
+        RenjuBoard = renjuBoard;
+    }
 
     void Start()
     {
@@ -29,6 +35,19 @@ public class OnlineRoomSelection : MonoBehaviour
             InvokeRepeating("RefreshLobbyIfNotInGame", 0.2f, 3f); //refresh every 3s
             InvokeRepeating("RefreshRoomIfWaitingForOpponent", 0.2f, 1f);
             InvokeRepeating("KeepConnectionToServerAlive", 0.2f, 5f); //evict player if this is not called after a while
+
+            foreach (Transform roomTransform in RoomsGameObject.transform)
+            {
+                foreach (Transform t in roomTransform)
+                { 
+                    if (t.name == "JoinButton")
+                    {
+                        string buttonText = t.GetChild(0).GetComponent<Text>().text;
+                        int roomNumber = Int32.Parse(buttonText.Substring(buttonText.IndexOf('#') + 1));
+                        t.GetComponent<Button>().onClick.AddListener(() => OnJoinButtonPress(roomNumber));
+                    }
+                }
+            }
         }
         else
         {
@@ -89,12 +108,6 @@ public class OnlineRoomSelection : MonoBehaviour
                         {
                             t.GetComponent<Text>().text = RoomSummaries[currentRoomIndex].P2;
                         }
-                        if (t.name == "JoinButton")
-                        {
-                            string buttonText = t.GetChild(0).GetComponent<Text>().text;
-                            int roomNumber = Int32.Parse(buttonText.Substring(buttonText.IndexOf('#') + 1));
-                            t.GetComponent<Button>().onClick.AddListener(() => OnJoinButtonPress(roomNumber));
-                        }
                     }
                     currentRoomIndex++;
                 }
@@ -124,6 +137,16 @@ public class OnlineRoomSelection : MonoBehaviour
         using (WWW www = new WWW(GameConfiguration.ServerUrl + "keep-alive?room=" + OnlineMultiplayerClient.OnlineRoomNumber + "&player-number=" + OnlineMultiplayerClient.OnlinePlayerNumber))
         {
             yield return www;
+            if (www.isDone)
+            {
+                // Check if server gave us a -1 error code, meaning opponent disconnected / forfeit / ragequit
+                if (www.text == "-1")
+                {                    
+                    RenjuBoard.SetWinner(OnlineMultiplayerClient.OnlinePlayerNumber);
+                    RenjuBoard.WinMessage.GetComponent<TextMesh>().text = "The opponent has left. \nYou win!";
+                    OnlineMultiplayerClient.OnlinePlayerNumber = PlayerNumber.Neither; //prevent KeepAlive being called again
+                }
+            }
         }
     }
 
@@ -169,5 +192,14 @@ public class OnlineRoomSelection : MonoBehaviour
     {
         NameInputField.SetActive(false);
         RoomsGameObject.SetActive(false);
+    }
+
+    public void ExitBackToLobby()
+    {
+        NameInputField.SetActive(true);
+        RoomsGameObject.SetActive(true);
+        PlayerName.text = "";
+        P1Label.text = "";
+        P2Label.text = "";
     }
 }
