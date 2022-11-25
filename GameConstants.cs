@@ -27,4 +27,6 @@ public static class GameConstants
     public static Quaternion QuaternionTowardsBlack = Quaternion.Euler(90, 0, 90);
     public static Quaternion IllegalMoveQuaternion = Quaternion.Euler(0, -90, 0);
     public static Quaternion QuaternionTowardsWhite = Quaternion.Euler(90, 0, -90);
+    public static Quaternion QuaternionTowardsBlack2D = Quaternion.Euler(0, 0, 90);
+    public static Quaternion QuaternionTowardsWhite2D = Quaternion.Euler(0, 0, -90);
 }

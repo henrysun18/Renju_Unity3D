@@ -10,6 +10,9 @@ public class RenjuBoard : MonoBehaviour
     public Button SoloUndoButton;
     public Button BlackUndoButton;
     public Button WhiteUndoButton;
+    public Button SoloRespawnPropsButton;
+    public Button BlackRespawnPropsButton;
+    public Button WhiteRespawnPropsButton;
     public GameObject BlackWinMessage;
     public GameObject WhiteWinMessage;
 
@@ -41,9 +44,7 @@ public class RenjuBoard : MonoBehaviour
 
         MainCamera = GameConfiguration.OrientCameraBasedOnPlatform();
 
-        BlackUndoButton.onClick.AddListener(OnUndoButtonPress);
-        WhiteUndoButton.onClick.AddListener(OnUndoButtonPress);
-        SoloUndoButton.onClick.AddListener(OnUndoButtonPress);
+        InitializeUndoAndOfficePropsButtons();
     }
 
     void OnMouseDown()
@@ -100,9 +101,10 @@ public class RenjuBoard : MonoBehaviour
         if (GameConfiguration.IsOnlineGame)
         {
 
+        } else
+        {
+            UndoOneMove();
         }
-
-        UndoOneMove();
     }
 
     public void UndoOneMove()
@@ -303,6 +305,26 @@ public class RenjuBoard : MonoBehaviour
         {
             OnlineMultiplayerClient.ResetGame();
             OnlineRoomSelection.ExitBackToLobby();
+        }
+    }
+
+    void InitializeUndoAndOfficePropsButtons()
+    {
+        if (GameConfiguration.IsAndroidGame)
+        {
+            SoloUndoButton.gameObject.SetActive(false);
+            BlackUndoButton.gameObject.SetActive(true);
+            WhiteUndoButton.gameObject.SetActive(true);
+            SoloRespawnPropsButton.gameObject.SetActive(false);
+            BlackRespawnPropsButton.gameObject.SetActive(true);
+            WhiteRespawnPropsButton.gameObject.SetActive(true);
+
+            BlackUndoButton.onClick.AddListener(OnUndoButtonPress);
+            WhiteUndoButton.onClick.AddListener(OnUndoButtonPress);
+        } else
+        {
+            // solo buttons are active by default, and android buttons are deactivated by default
+            SoloUndoButton.onClick.AddListener(OnUndoButtonPress);
         }
     }
 }
