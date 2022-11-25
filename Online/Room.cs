@@ -8,21 +8,6 @@
         RoomSummary = new RoomSummary();
     }
 
-    public bool IsBlacksTurn()
-    {
-        return GameState != null && GameState.IsBlacksTurn;
-    }
-
-    public bool IsWhitesTurn()
-    {
-        return GameState != null && !GameState.IsBlacksTurn;
-    }
-
-    public void EndTurn()
-    {
-        GameState.IsBlacksTurn = !GameState.IsBlacksTurn;
-    }
-
     public bool IsUndoButtonPressedByBlack()
     {
         if (GameState == null || GameState.UndoStates == null)

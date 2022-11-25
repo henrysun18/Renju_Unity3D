@@ -21,6 +21,7 @@ public class RenjuBoard : MonoBehaviour
     private IllegalMovesCalculator IllegalMovesCalculator;
     private IllegalMovesController IllegalMovesController;
     private OnlineRoomSelection OnlineRoomSelection;
+    private OnlineMultiplayerClient OnlineMultiplayerClient;
 
     private OccupancyState[,] Board = new OccupancyState[GameConfiguration.BOARD_SIZE, GameConfiguration.BOARD_SIZE];
     private LinkedList<Stone> MovesHistory = new LinkedList<Stone>();
@@ -33,7 +34,9 @@ public class RenjuBoard : MonoBehaviour
         IllegalMovesCalculator = new IllegalMovesCalculator(this, MovesHistory);
         IllegalMovesController = new IllegalMovesController(this, IllegalMovesCalculator);
         OnlineRoomSelection = GetComponent<OnlineRoomSelection>();
+        OnlineMultiplayerClient = GetComponent<OnlineMultiplayerClient>();
         OnlineRoomSelection.Init(this);
+        OnlineMultiplayerClient.Init(this);
 
         MainCamera = GameConfiguration.OrientCameraBasedOnPlatform();
 
@@ -66,13 +69,14 @@ public class RenjuBoard : MonoBehaviour
             {
                 AttemptToPlaceStone(myMove); 
             }
-            /*else if (!GameConfiguration.IsInOnlineLobby && _onlineMultiplayerClient.IsMyTurn()) //ONLINE MULTIPLAYER
+            else if (GameConfiguration.IsOnlineGame && OnlineMultiplayerClient.IsMyTurn()) //ONLINE MULTIPLAYER
             {
+                Debug.Log("attemping to place stone " + myMove.X + "," + myMove.Y);
                 if (AttemptToPlaceStone(myMove))
                 {
-                    StartCoroutine(_onlineMultiplayerClient.SetTurnOverAfterMyMove(myMove));
+                    StartCoroutine(OnlineMultiplayerClient.MakeMove(myMove));
                 }
-            }*/
+            }
         }
     }
 
@@ -108,7 +112,7 @@ public class RenjuBoard : MonoBehaviour
             DisableHaloFromPreviousStoneAndEnableOnThisStone(MovesHistory.Last.Value.stoneObj);
         }
 
-        IsBlacksTurn = !IsBlacksTurn;
+        EndTurn();
 
         //after undo, if it's blacks turn then redraw warnings, otherwise just remove
         IllegalMovesController.DestroyIllegalMoveWarnings();
@@ -141,7 +145,7 @@ public class RenjuBoard : MonoBehaviour
 
             if (!GameConfiguration.IsDebugModeWithSamePieceUntilUndo) //don't handle IsBlacksTurn when placing stone, only do so in Undo button
             {
-                IsBlacksTurn = !IsBlacksTurn; //next guy's turn
+                EndTurn(); //next guy's turn
             }
 
             if (IsBlacksTurn && !IsGameOver) IllegalMovesController.ShowIllegalMoves();
@@ -151,6 +155,11 @@ public class RenjuBoard : MonoBehaviour
         }
 
         return false;
+    }
+
+    public void EndTurn()
+    {
+        IsBlacksTurn = !IsBlacksTurn;
     }
 
     public OccupancyState GetPointOnBoardOccupancyState(Point point)

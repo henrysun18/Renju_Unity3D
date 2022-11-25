@@ -8,6 +8,9 @@ using UnityEngine.UI;
 using Random = UnityEngine.Random;
 using Firebase.Database;
 using Firebase.Extensions;
+using UnityEngine.Networking;
+using UnityEditor.PackageManager.Requests;
+
 public class OnlineRoomSelection : MonoBehaviour
 {
     public GameObject NameInputField;
@@ -36,6 +39,7 @@ public class OnlineRoomSelection : MonoBehaviour
             {
                 if (task.IsCompleted)
                 {
+                    // assumes URL obtained from Firebase is prefixed with http:// and suffixed with :8080/
                     GameConfiguration.ServerUrl = task.Result.Value.ToString();
                 }
                 else
@@ -103,14 +107,20 @@ public class OnlineRoomSelection : MonoBehaviour
 
     IEnumerator RefreshLobby()
     {
-        using (WWW www = new WWW(GameConfiguration.ServerUrl + "refresh-lobby"))
+        string url = GameConfiguration.ServerUrl + "refresh-lobby";
+        using (UnityWebRequest www = UnityWebRequest.Get(url))
         {
-            yield return www;
+            yield return www.SendWebRequest();
             //MAJOR KEY, otherwise anything written here assumes www is null
             //(spent hrs debugging this then realized I stumbled across this before)
-            if (www.isDone) 
+            if (www.isNetworkError || www.isHttpError)
             {
-                RoomSummaries = JsonConvert.DeserializeObject<List<RoomSummary>>(www.text);
+                Debug.Log(url + ", error: " + www.error);
+            }
+            else
+            {
+                //Debug.Log(www.downloadHandler.text);
+                RoomSummaries = JsonConvert.DeserializeObject<List<RoomSummary>>(www.downloadHandler.text);
                 
                 int currentRoomIndex = 0;
                 foreach (Transform roomTransform in RoomsGameObject.transform)
@@ -140,6 +150,7 @@ public class OnlineRoomSelection : MonoBehaviour
             if (www.isDone)
             {
                 RoomSummary response = JsonConvert.DeserializeObject<RoomSummary>(www.text);
+                Debug.Log("refreshing room " + OnlineMultiplayerClient.OnlineRoomNumber + " " + response.ToString());
 
                 OnlineMultiplayerClient.OnlineRoomInfo.SetP1(response.P1);
                 OnlineMultiplayerClient.OnlineRoomInfo.SetP2(response.P2);
@@ -169,6 +180,7 @@ public class OnlineRoomSelection : MonoBehaviour
 
     private void OnJoinButtonPress(int roomNumber)
     {
+        Debug.Log("onJoinButtonPress" + roomNumber);
         StartCoroutine(JoinRoomGivenRoomNumberAndPlayerName(roomNumber, PlayerName.text));
     }
 
@@ -183,6 +195,7 @@ public class OnlineRoomSelection : MonoBehaviour
             yield return www;
             if (www.isDone)
             {
+                Debug.Log("joined room" + roomNumber + " as player " + www.text + " name " + playerName);
                 if (www.text == "1")
                 {
                     OnlineMultiplayerClient.OnlinePlayerNumber = PlayerNumber.One;

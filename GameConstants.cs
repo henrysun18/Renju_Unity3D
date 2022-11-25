@@ -8,6 +8,7 @@ public static class GameConstants
     public const string CAMERA_ANDROID = "CameraAndroid";
     public const string CAMERA_PC = "CameraPC";
 
+    public const string BOARD = "Board";
     public const string BLACK_STONE = "BlackStone";
     public const string WHITE_STONE = "WhiteStone";
     public const string MOVE_NUMBER_TEXT = "MoveNumberText";

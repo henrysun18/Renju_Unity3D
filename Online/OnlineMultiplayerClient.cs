@@ -10,54 +10,69 @@ public class OnlineMultiplayerClient : MonoBehaviour
     public static int OnlineRoomNumber = -1;
     public static Room OnlineRoomInfo = new Room();
 
-    private RenjuBoard RenjuBoard;
+    private static RenjuBoard RenjuBoard;
 
     public void Init(RenjuBoard renjuBoard)
     {
-        this.RenjuBoard = renjuBoard;
+        RenjuBoard = renjuBoard;
     }
 
     void Start()
     {
-        if (GameConfiguration.IsOnlineGame && OnlineRoomNumber >= 0)
-        {
-            InvokeRepeating("CheckForOpponentAction", 0.2f, 1f); //refresh every 1s
-        }
+        Debug.Log("start() of OnlineMultiplayerClient, invokeRepeating checkForOpponentAction (if needed)");
+        InvokeRepeating("CheckForOpponentAction", 0.2f, 1f); //refresh every 1s
+    }
+
+    // called every time a user tries to click on a point on the board during online play. If true, user is allowed to put a piece down
+    public bool IsMyTurn()
+    {
+        bool isMyTurnAsBlack = OnlinePlayerNumber == PlayerNumber.One && RenjuBoard.IsBlacksTurn && !string.IsNullOrEmpty(OnlineRoomInfo.RoomSummary.P2);
+        bool isMyTurnAsWhite = OnlinePlayerNumber == PlayerNumber.Two && !RenjuBoard.IsBlacksTurn;
+        Debug.Log("checking if it's my turn. playernumber / isMyTurnAsBlack / isMyTurnAsWhite: " + OnlinePlayerNumber + " " + isMyTurnAsBlack + " " + isMyTurnAsWhite);
+        return isMyTurnAsBlack || isMyTurnAsWhite;
     }
 
     void CheckForOpponentAction()
     {
-        //Black will call this in the beginning to verify with server if he can start (IsMyTurn() is the only method that can modify OnlineRoomInfo...IsBlacksTurn)
-        //White will call IsMyTurn as soon as both players are in the room
-        if (OnlinePlayerNumber == PlayerNumber.One && OnlineRoomInfo.IsWhitesTurn()
-            || OnlinePlayerNumber == PlayerNumber.Two && OnlineRoomInfo.IsBlacksTurn())
+        //Black will call this in the beginning to verify with server if he can start
+        //White will call this as soon as both players are in the room
+        Debug.Log("CheckForOpponentAction as player " + OnlinePlayerNumber + " isBlacksTurn: " + RenjuBoard.IsBlacksTurn);
+        if (GameConfiguration.IsOnlineGame && OnlineRoomNumber >= 0)
         {
-            StartCoroutine(IsMyTurn());
+            if (OnlinePlayerNumber == PlayerNumber.One && !RenjuBoard.IsBlacksTurn
+            || OnlinePlayerNumber == PlayerNumber.Two && RenjuBoard.IsBlacksTurn)
+            {
+                StartCoroutine(CheckIsMyTurn());
+            }
         }
     } 
 
-    public IEnumerator IsMyTurn()
+    public IEnumerator CheckIsMyTurn()
     {
-        using (WWW www = new WWW(GameConfiguration.ServerUrl + "is-my-turn?room=" + OnlineRoomNumber + "&player-number=" + OnlinePlayerNumber))
+        string url = GameConfiguration.ServerUrl + "is-my-turn?room=" + OnlineRoomNumber + "&player-number=" + OnlinePlayerNumber;
+        using (WWW www = new WWW(url))
         {
+            yield return www;
             if (www.isDone)
             {
+                Debug.Log("CheckIsMyTurn url: " + url);
                 if (www.text.Equals("true"))
                 {
-                    OnlineRoomInfo.GameState.IsBlacksTurn = OnlinePlayerNumber == PlayerNumber.One;
                     StartCoroutine(GetOpponentsMostRecentMove());
                 }
-                yield return www;
             }
         }
     }
 
     IEnumerator GetOpponentsMostRecentMove() //only usage is in IsMyTurn()
     {
-        using (WWW www = new WWW(GameConfiguration.ServerUrl + "most-recent-move?room=" + OnlineRoomNumber))
+        string url = GameConfiguration.ServerUrl + "most-recent-move?room=" + OnlineRoomNumber;
+        using (WWW www = new WWW(url))
         {
+            yield return www;
             if (www.isDone)
             {
+                Debug.Log("GetOpponentsMostRecentMove url: " + url);
                 Point mostRecentMove = JsonConvert.DeserializeObject<Point>(www.text);
                 if (mostRecentMove.X == -1 && mostRecentMove.Y == -1)
                 {
@@ -65,19 +80,21 @@ public class OnlineMultiplayerClient : MonoBehaviour
                 }
 
                 RenjuBoard.AttemptToPlaceStone(mostRecentMove);
-                yield return www;
             }
         }
     }
 
     public IEnumerator MakeMove(Point point)
     {
-        OnlineRoomInfo.GameState.IsBlacksTurn = !OnlineRoomInfo.GameState.IsBlacksTurn;
-        using (WWW www = new WWW(string.Format("{0}make-move?room={1}&player-number={2}&x={3}&y={4}", GameConfiguration.ServerUrl, OnlineRoomNumber, OnlinePlayerNumber, point.X, point.Y)))
+        Debug.Log("making move with updated renjuboard.isblacksturn " + RenjuBoard.IsBlacksTurn);
+        // notify server that we made a move, so server can then in turn notify the other player to make the next move
+        string url = string.Format("{0}make-move?room={1}&player-number={2}&x={3}&y={4}", GameConfiguration.ServerUrl, OnlineRoomNumber, OnlinePlayerNumber, point.X, point.Y);
+        using (WWW www = new WWW(url))
         {
+            yield return www;
             if (www.isDone)
             {
-                yield return www;
+                Debug.Log("MakeMove to url: " + url);
             }
         }
     }
