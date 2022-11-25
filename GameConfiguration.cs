@@ -9,7 +9,7 @@ public class GameConfiguration {
 
     //determines whether to show OnlineRoomSelection, and restrict player to only one colour
     public static bool IsOnlineGame = true;
-    public static string ServerUrl = "http://localhost:8080/";
+    public static string ServerUrl;
 
     public static readonly int BOARD_SIZE = 15;
 

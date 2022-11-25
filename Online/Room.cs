@@ -13,6 +13,11 @@
         return GameState != null && GameState.IsBlacksTurn;
     }
 
+    public bool IsWhitesTurn()
+    {
+        return GameState != null && !GameState.IsBlacksTurn;
+    }
+
     public void EndTurn()
     {
         GameState.IsBlacksTurn = !GameState.IsBlacksTurn;

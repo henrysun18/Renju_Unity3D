@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using Firebase.Database;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
-
+using Firebase.Database;
+using Firebase.Extensions;
 public class OnlineRoomSelection : MonoBehaviour
 {
     public GameObject NameInputField;
@@ -29,6 +31,21 @@ public class OnlineRoomSelection : MonoBehaviour
     {
         if (GameConfiguration.IsOnlineGame)
         {
+            // grab server URL from firebase in case Compute Engine instance's IP changes
+            FirebaseDatabase.DefaultInstance.GetReference("renju3d-server-ip").GetValueAsync().ContinueWithOnMainThread(task =>
+            {
+                if (task.IsCompleted)
+                {
+                    GameConfiguration.ServerUrl = task.Result.Value.ToString();
+                }
+                else
+                {
+                    GameConfiguration.ServerUrl = "http://localhost:8080/";
+                }
+                Debug.Log("server URL:" + GameConfiguration.ServerUrl);
+            });
+
+            // default names if not provided by user
             AnimalsTextFile = Resources.Load<TextAsset>("animals");
             animals = AnimalsTextFile.text.Split();
 
