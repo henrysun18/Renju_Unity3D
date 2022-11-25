@@ -158,6 +158,25 @@ public class OnlineRoomSelection : MonoBehaviour
                 OnlineMultiplayerClient.OnlineRoomInfo.SetP2(response.P2);
                 P1Label.text = response.P1;
                 P2Label.text = response.P2;
+
+                // rotate P1Label and P2Label if needed
+                if (GameConfiguration.IsAndroidGame)
+                {
+                    if (OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.One)
+                    {
+                        P1Label.transform.rotation = GameConstants.QuaternionTowardsBlack;
+                        P2Label.transform.rotation = GameConstants.QuaternionTowardsBlack;
+                    }
+                    else if (OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.Two)
+                    {
+                        P1Label.transform.rotation = GameConstants.QuaternionTowardsWhite;
+                        P2Label.transform.rotation = GameConstants.QuaternionTowardsWhite;
+                    } else
+                    {
+                        P1Label.transform.rotation = GameConstants.QuaternionTowardsBlack;
+                        P2Label.transform.rotation = GameConstants.QuaternionTowardsWhite;
+                    }
+                }
             }
         }
     }
