@@ -8,6 +8,7 @@ public class PlayerNumber
     public static int Neither = 0;
     public static int One = 1;
     public static int Two = 2;
+    public static int Spectator = 3;
 }
 
 public enum IllegalMoveReason

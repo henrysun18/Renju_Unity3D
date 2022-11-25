@@ -15,6 +15,7 @@ public class OnlineRoomSelection : MonoBehaviour
 {
     public GameObject NameInputField;
     public GameObject RoomsGameObject;
+    public GameObject OnlineRoomsSelectionUI;
     public Text PlayerName;
     public Text P1Label;
     public Text P2Label;
@@ -92,6 +93,7 @@ public class OnlineRoomSelection : MonoBehaviour
     {
         if (OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.One && string.IsNullOrEmpty(OnlineMultiplayerClient.OnlineRoomInfo.P2()) ||
             OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.Two && string.IsNullOrEmpty(OnlineMultiplayerClient.OnlineRoomInfo.P1()))
+            // || OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.Spectator && string.IsNullOrEmpty(OnlineMultiplayerClient.OnlineRoomInfo.P1()))
         {
             StartCoroutine(RefreshRoom());
         }
@@ -199,21 +201,22 @@ public class OnlineRoomSelection : MonoBehaviour
                 if (www.text == "1")
                 {
                     OnlineMultiplayerClient.OnlinePlayerNumber = PlayerNumber.One;
-                    OnlineMultiplayerClient.OnlineRoomNumber = roomNumber;
                     P1Label.text = playerName;
-                    HideRoomSelectionUI();
                 }
                 else if (www.text == "2")
                 {
                     OnlineMultiplayerClient.OnlinePlayerNumber = PlayerNumber.Two;
-                    OnlineMultiplayerClient.OnlineRoomNumber = roomNumber;
                     P2Label.text = playerName;
-                    HideRoomSelectionUI();
                 }
                 else
                 {
-                    // ask user to retry, since someone else may have taken their place?
+                    // TODO: assume room is full, so we can only spectate
+                    //OnlineMultiplayerClient.OnlinePlayerNumber = PlayerNumber.Spectator;
+                    // P1Label and P2Label will be set when polling server for moves
                 }
+
+                OnlineMultiplayerClient.OnlineRoomNumber = roomNumber;
+                HideRoomSelectionUI();
             }
         }
     }
