@@ -14,6 +14,7 @@ public class RenjuBoard : MonoBehaviour
     public GameObject WhiteWinMessage;
 
     public static bool IsGameOver;
+    public static bool IsGameOverMouseDowned; // hack to ensure we only reset game state after a full mousedown = mouseup (to avoid duplicate button presses e.g. re-joining a room)
     public static bool IsBlacksTurn;
     public static GameObject WinMessage;
 
@@ -49,7 +50,7 @@ public class RenjuBoard : MonoBehaviour
     {
         if (IsGameOver)
         {
-            ResetGameState();
+            IsGameOverMouseDowned = true;
             return;
         }
 
@@ -77,6 +78,15 @@ public class RenjuBoard : MonoBehaviour
                     StartCoroutine(OnlineMultiplayerClient.MakeMove(myMove));
                 }
             }
+        }
+    }
+
+    private void OnMouseUp()
+    {
+        if (IsGameOverMouseDowned)
+        {
+            ResetGameState();
+            return;
         }
     }
 
@@ -286,6 +296,7 @@ public class RenjuBoard : MonoBehaviour
         }
 
         IsGameOver = false;
+        IsGameOverMouseDowned = false;
         IsBlacksTurn = true;
 
         if (GameConfiguration.IsOnlineGame)
