@@ -11,6 +11,8 @@ public class OnlineMultiplayerClient : MonoBehaviour
     public static Room OnlineRoomInfo = new Room();
 
     private static RenjuBoard RenjuBoard;
+    public GameObject UndoRequestSentModal;
+    public GameObject UndoRequestReceivedModal;
 
     public void Init(RenjuBoard renjuBoard)
     {
@@ -72,14 +74,40 @@ public class OnlineMultiplayerClient : MonoBehaviour
             yield return www;
             if (www.isDone)
             {
-                Debug.Log("GetOpponentsMostRecentMove url: " + url);
                 Point mostRecentMove = JsonConvert.DeserializeObject<Point>(www.text);
-                if (mostRecentMove.X == -1 && mostRecentMove.Y == -1)
+                Debug.Log("GetOpponentsMostRecentMove url: " + url + " which is " + www.text);
+                if (mostRecentMove.Equals(GameConstants.UNDO_REQUEST))
                 {
-                    //opponent pressed undo
+                    // if opponent clicks undo, we need to open a pop-up to accept or reject. So the baton is passed to us. 
+                    if (!UndoRequestReceivedModal.activeInHierarchy)
+                    {
+                        UndoRequestReceivedModal.SetActive(true);
+                        RenjuBoard.EndTurn();
+                    }
                 }
-
-                RenjuBoard.AttemptToPlaceStone(mostRecentMove);
+                else if (mostRecentMove.Equals(GameConstants.UNDO_REQUEST_ACCEPTED))
+                {
+                    // if opponent accepts undo request, Close the "waiting" pop-up, then undo, before finally passing the baton back to us
+                    if (UndoRequestSentModal.activeInHierarchy) {
+                        // don't accidentally undo too many times
+                        UndoRequestSentModal.SetActive(false);
+                        Undo();
+                        RenjuBoard.EndTurn();
+                    }
+                }
+                else if (mostRecentMove.Equals(GameConstants.UNDO_REQUEST_REJECTED))
+                {
+                    // if opponent rejects undo request, Close the "waiting" pop-up, and now it's simply our turn again
+                    if (UndoRequestSentModal.activeInHierarchy)
+                    {
+                        UndoRequestSentModal.SetActive(false);
+                        RenjuBoard.EndTurn();
+                    }
+                }
+                else
+                {
+                    RenjuBoard.AttemptToPlaceStone(mostRecentMove);
+                }
             }
         }
     }
@@ -99,16 +127,34 @@ public class OnlineMultiplayerClient : MonoBehaviour
         }
     }
 
-    public IEnumerator Undo(int roomNumber)
+    private void Undo()
     {
-        //OnlineRoomInfo.EndTurn();
-        using (WWW www = new WWW(GameConfiguration.ServerUrl + "undo?room=" + roomNumber))
-        {
-            // make sure players can't just spam this button to create desync
-            // since undo button can be pressed even if it's not the player's turn (?)
-            // or we can make it so that the other party has to agree to undo
-            yield return www;
-        }
+        // need to undo opponents turn as well as our most recent turn
+        RenjuBoard.UndoOneMove();
+        RenjuBoard.UndoOneMove();
+    }
+
+    public void UndoRequest()
+    {
+        // mock move being made on the client side, so we can continue checking for opponent "moves" a.k.a. the undo response
+        RenjuBoard.EndTurn();
+        UndoRequestSentModal.SetActive(true);
+        StartCoroutine(MakeMove(GameConstants.UNDO_REQUEST));
+    }
+
+    public void UndoRequestAccept()
+    {
+        RenjuBoard.EndTurn();
+        UndoRequestReceivedModal.SetActive(false);
+        Undo(); // removes the 2 most recent moves on the client-side, before letting server and thus the opponent know to do the same
+        StartCoroutine(MakeMove(GameConstants.UNDO_REQUEST_ACCEPTED));
+    }
+
+    public void UndoRequestReject()
+    {
+        RenjuBoard.EndTurn();
+        UndoRequestReceivedModal.SetActive(false);
+        StartCoroutine(MakeMove(GameConstants.UNDO_REQUEST_REJECTED));
     }
 
     public static void ResetGame()

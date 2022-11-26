@@ -159,8 +159,8 @@ public class OnlineRoomSelection : MonoBehaviour
                 P1Label.text = response.P1;
                 P2Label.text = response.P2;
 
-                // rotate P1Label and P2Label if needed
-                if (GameConfiguration.IsAndroidGame)
+                // rotate P1Label and P2Label if needed (actually, let's just don't rotate, and keep online UI the same as web)
+                /*if (GameConfiguration.IsAndroidGame)
                 {
                     if (OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.One)
                     {
@@ -176,7 +176,7 @@ public class OnlineRoomSelection : MonoBehaviour
                         P1Label.transform.rotation = GameConstants.QuaternionTowardsBlack;
                         P2Label.transform.rotation = GameConstants.QuaternionTowardsWhite;
                     }
-                }
+                }*/
             }
         }
     }

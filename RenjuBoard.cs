@@ -62,7 +62,7 @@ public class RenjuBoard : MonoBehaviour
         {
             if (hit.collider.gameObject.tag == GameConstants.PROP)
             {
-                return; //don't try placing stone if we hit a prop
+                return; //don't try placing stone if we hit a prop (or undo modal tagged as prop)
             }
 
             Point myMove = Point.At((int) Math.Round(hit.point.x), (int) Math.Round(hit.point.z));
@@ -100,7 +100,11 @@ public class RenjuBoard : MonoBehaviour
 
         if (GameConfiguration.IsOnlineGame)
         {
-
+            // send undo request, but only if it's your turn (to avoid dealing with race conditions)
+            if (OnlineMultiplayerClient.IsMyTurn())
+            {
+                OnlineMultiplayerClient.UndoRequest();
+            }
         } else
         {
             UndoOneMove();
@@ -172,6 +176,23 @@ public class RenjuBoard : MonoBehaviour
     public void EndTurn()
     {
         IsBlacksTurn = !IsBlacksTurn;
+
+        if (GameConfiguration.IsOnlineGame)
+        {
+            // make undo button look disabled when it's not our turn (since it already doesn't work when it's not our turn)
+            // also, let's avoid the "undo my turn even though I haven't gone yet" bug that occurs when white tries to undo with only 1 black piece on the board
+            if (OnlineMultiplayerClient.IsMyTurn() && MovesHistory.Count >= 2)
+            {
+                SoloUndoButton.interactable = true;
+                BlackUndoButton.interactable = true;
+                WhiteUndoButton.interactable = true;
+            } else
+            {
+                SoloUndoButton.interactable = false;
+                BlackUndoButton.interactable = false;
+                WhiteUndoButton.interactable = false;
+            }
+        }
     }
 
     public OccupancyState GetPointOnBoardOccupancyState(Point point)
@@ -310,21 +331,18 @@ public class RenjuBoard : MonoBehaviour
 
     void InitializeUndoAndOfficePropsButtons()
     {
-        if (GameConfiguration.IsAndroidGame)
+        if (GameConfiguration.IsAndroidGame && !GameConfiguration.IsOnlineGame)
         {
+            // only show two undo buttons when we're palying offline on Android
             SoloUndoButton.gameObject.SetActive(false);
             BlackUndoButton.gameObject.SetActive(true);
             WhiteUndoButton.gameObject.SetActive(true);
             SoloRespawnPropsButton.gameObject.SetActive(false);
             BlackRespawnPropsButton.gameObject.SetActive(true);
             WhiteRespawnPropsButton.gameObject.SetActive(true);
-
-            BlackUndoButton.onClick.AddListener(OnUndoButtonPress);
-            WhiteUndoButton.onClick.AddListener(OnUndoButtonPress);
-        } else
-        {
-            // solo buttons are active by default, and android buttons are deactivated by default
-            SoloUndoButton.onClick.AddListener(OnUndoButtonPress);
         }
+        BlackUndoButton.onClick.AddListener(OnUndoButtonPress);
+        WhiteUndoButton.onClick.AddListener(OnUndoButtonPress);
+        SoloUndoButton.onClick.AddListener(OnUndoButtonPress);
     }
 }

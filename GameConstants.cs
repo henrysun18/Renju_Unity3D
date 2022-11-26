@@ -29,4 +29,9 @@ public static class GameConstants
     public static Quaternion QuaternionTowardsWhite = Quaternion.Euler(90, 0, -90);
     public static Quaternion QuaternionTowardsBlack2D = Quaternion.Euler(0, 0, 90);
     public static Quaternion QuaternionTowardsWhite2D = Quaternion.Euler(0, 0, -90);
+
+    public static Point UNDO_MOVE = Point.At(-1, -1);
+    public static Point UNDO_REQUEST = Point.At(-2, -2);
+    public static Point UNDO_REQUEST_ACCEPTED = Point.At(-3, -3);
+    public static Point UNDO_REQUEST_REJECTED = Point.At(-4, -4);
 }
