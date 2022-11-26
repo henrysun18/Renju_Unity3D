@@ -41,4 +41,9 @@
     {
         RoomSummary.P2 = name;
     }
+
+    public bool IsBothPlayersPresent()
+    {
+        return !string.IsNullOrEmpty(P1()) && !string.IsNullOrEmpty(P2());
+    }
 }

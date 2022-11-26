@@ -19,6 +19,7 @@ public class OnlineRoomSelection : MonoBehaviour
     public Text PlayerName;
     public Text P1Label;
     public Text P2Label;
+    public AudioSource GameStartedSound; // play this when both players are ready
 
     private static RenjuBoard RenjuBoard;
     private static List<RoomSummary> RoomSummaries;
@@ -158,6 +159,12 @@ public class OnlineRoomSelection : MonoBehaviour
                 OnlineMultiplayerClient.OnlineRoomInfo.SetP2(response.P2);
                 P1Label.text = response.P1;
                 P2Label.text = response.P2;
+
+                if (OnlineMultiplayerClient.OnlineRoomInfo.IsBothPlayersPresent())
+                {
+                    Debug.Log("both players are now present. playing sound");
+                    GameStartedSound.Play();
+                }
 
                 // rotate P1Label and P2Label if needed (actually, let's just don't rotate, and keep online UI the same as web)
                 /*if (GameConfiguration.IsAndroidGame)
