@@ -249,6 +249,9 @@ public class RenjuBoard : MonoBehaviour
             if (GameConfiguration.IsOnlineGame)
             {
                 WinMessage.GetComponent<TextMesh>().text = OnlineMultiplayerClient.OnlineRoomInfo.RoomSummary.P1 + " Wins!";
+            } else
+            {
+                WinMessage.GetComponent<TextMesh>().text = "Black Wins!";
             }
         }
         else
@@ -257,6 +260,9 @@ public class RenjuBoard : MonoBehaviour
             if (GameConfiguration.IsOnlineGame)
             {
                 WinMessage.GetComponent<TextMesh>().text = OnlineMultiplayerClient.OnlineRoomInfo.RoomSummary.P2 + " Wins!";
+            } else
+            {
+                WinMessage.GetComponent<TextMesh>().text = "White Wins!";
             }
         }
 

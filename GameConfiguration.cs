@@ -8,7 +8,7 @@ public class GameConfiguration {
     public static bool IsAndroidGame = false;
 
     //determines whether to show OnlineRoomSelection, and restrict player to only one colour
-    public static bool IsOnlineGame = true;
+    public static bool IsOnlineGame;
     public static string ServerUrl;
 
     public static readonly int BOARD_SIZE = 15;

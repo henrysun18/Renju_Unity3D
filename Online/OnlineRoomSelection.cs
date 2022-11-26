@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using Firebase.Database;
+//using Firebase.Database;
+//using Firebase.Extensions;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
-using Firebase.Database;
-using Firebase.Extensions;
 using UnityEngine.Networking;
-using UnityEditor.PackageManager.Requests;
 
 public class OnlineRoomSelection : MonoBehaviour
 {
@@ -32,24 +30,42 @@ public class OnlineRoomSelection : MonoBehaviour
         RenjuBoard = renjuBoard;
     }
 
+    private IEnumerator GetAndCacheServerURL() 
+    {
+        string url = "https://henrys-firebase-db.firebaseio.com/renju3d-server-ip.json";
+        using (UnityWebRequest www = UnityWebRequest.Get(url))
+        {
+            yield return www.SendWebRequest();
+            if (www.isDone)
+            {
+                string serverUrl = JsonConvert.DeserializeObject<string>(www.downloadHandler.text);
+                Debug.Log("rest api get : " + www.downloadHandler.text + " serverUrl: " + serverUrl);
+                GameConfiguration.ServerUrl = serverUrl;
+            }
+        }
+
+        // old native approach that doesn't work on WebGL build
+        /*FirebaseDatabase.DefaultInstance.GetReference("renju3d-server-ip").GetValueAsync().ContinueWithOnMainThread(task =>
+        {
+            if (task.IsCompleted)
+            {
+                // assumes URL obtained from Firebase is prefixed with http:// and suffixed with :8080/
+                GameConfiguration.ServerUrl = task.Result.Value.ToString();
+            }
+            else
+            {
+                GameConfiguration.ServerUrl = "http://localhost:8080/";
+            }
+            Debug.Log("server URL:" + GameConfiguration.ServerUrl);
+        });*/
+    }
+
     void Start()
     {
         if (GameConfiguration.IsOnlineGame)
         {
             // grab server URL from firebase in case Compute Engine instance's IP changes
-            FirebaseDatabase.DefaultInstance.GetReference("renju3d-server-ip").GetValueAsync().ContinueWithOnMainThread(task =>
-            {
-                if (task.IsCompleted)
-                {
-                    // assumes URL obtained from Firebase is prefixed with http:// and suffixed with :8080/
-                    GameConfiguration.ServerUrl = task.Result.Value.ToString();
-                }
-                else
-                {
-                    GameConfiguration.ServerUrl = "http://localhost:8080/";
-                }
-                Debug.Log("server URL:" + GameConfiguration.ServerUrl);
-            });
+            StartCoroutine(GetAndCacheServerURL());
 
             // default names if not provided by user
             AnimalsTextFile = Resources.Load<TextAsset>("animals");
