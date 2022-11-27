@@ -307,7 +307,7 @@ public class RenjuBoard : MonoBehaviour
         }
     }
 
-    void ResetGameState()
+    public void ResetGameState()
     {
         IllegalMovesController.DestroyIllegalMoveWarnings();
         GameObject.Find(GameConstants.OFFICE_PROPS).GetComponent<OfficeProps>().ResetAllProps();

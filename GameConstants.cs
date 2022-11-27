@@ -34,4 +34,5 @@ public static class GameConstants
     public static Point UNDO_REQUEST = Point.At(-2, -2);
     public static Point UNDO_REQUEST_ACCEPTED = Point.At(-3, -3);
     public static Point UNDO_REQUEST_REJECTED = Point.At(-4, -4);
+    public static Point LEAVE_ROOM = Point.At(-100, -100);
 }

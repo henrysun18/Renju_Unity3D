@@ -147,6 +147,12 @@ public class OnlineMultiplayerClient : MonoBehaviour
         StartCoroutine(MakeMove(GameConstants.UNDO_REQUEST_REJECTED));
     }
 
+    public void LeaveRoom()
+    {
+        StartCoroutine(MakeMove(GameConstants.LEAVE_ROOM));
+        RenjuBoard.ResetGameState();
+    }
+
     public static void ResetGame()
     {
         OnlinePlayerNumber = PlayerNumber.Neither;

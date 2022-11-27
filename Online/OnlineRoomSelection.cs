@@ -264,7 +264,10 @@ public class OnlineRoomSelection : MonoBehaviour
     {
         NameInputField.SetActive(false);
         RoomsGameObject.SetActive(false);
-        LeaveButton.SetActive(true); // show the Leave room button
+        if (GameConfiguration.IsOnlineGame)
+        {
+            LeaveButton.SetActive(true); // show the Leave room button
+        }
     }
 
     public void ExitBackToLobby()
