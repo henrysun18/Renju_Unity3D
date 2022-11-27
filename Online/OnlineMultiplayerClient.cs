@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Assets.Scripts.Online;
+using Newtonsoft.Json;
 using System.Collections;
 using System.Text;
 using UnityEngine;
@@ -52,64 +53,57 @@ public class OnlineMultiplayerClient : MonoBehaviour
     public IEnumerator CheckIsMyTurn()
     {
         string url = GameConfiguration.ServerUrl + "is-my-turn?room=" + OnlineRoomNumber + "&player-number=" + OnlinePlayerNumber;
-        using (WWW www = new WWW(url))
+        return RestAPIUtil.GetRequest(url, (response) =>
         {
-            yield return www;
-            if (www.isDone)
+            Debug.Log("CheckIsMyTurn url: " + url);
+            if (response.Equals("true"))
             {
-                Debug.Log("CheckIsMyTurn url: " + url);
-                if (www.text.Equals("true"))
-                {
-                    StartCoroutine(GetOpponentsMostRecentMove());
-                }
+                StartCoroutine(GetOpponentsMostRecentMove());
             }
-        }
+        });
     }
 
     IEnumerator GetOpponentsMostRecentMove() //only usage is in IsMyTurn()
     {
         string url = GameConfiguration.ServerUrl + "most-recent-move?room=" + OnlineRoomNumber;
-        using (WWW www = new WWW(url))
+        return RestAPIUtil.GetRequest(url, (response) =>
         {
-            yield return www;
-            if (www.isDone)
+            Point mostRecentMove = JsonConvert.DeserializeObject<Point>(response);
+            Debug.Log("GetOpponentsMostRecentMove url: " + url + " which is " + response);
+            if (mostRecentMove.Equals(GameConstants.UNDO_REQUEST))
             {
-                Point mostRecentMove = JsonConvert.DeserializeObject<Point>(www.text);
-                Debug.Log("GetOpponentsMostRecentMove url: " + url + " which is " + www.text);
-                if (mostRecentMove.Equals(GameConstants.UNDO_REQUEST))
+                // if opponent clicks undo, we need to open a pop-up to accept or reject. So the baton is passed to us. 
+                if (!UndoRequestReceivedModal.activeInHierarchy)
                 {
-                    // if opponent clicks undo, we need to open a pop-up to accept or reject. So the baton is passed to us. 
-                    if (!UndoRequestReceivedModal.activeInHierarchy)
-                    {
-                        UndoRequestReceivedModal.SetActive(true);
-                        RenjuBoard.EndTurn();
-                    }
-                }
-                else if (mostRecentMove.Equals(GameConstants.UNDO_REQUEST_ACCEPTED))
-                {
-                    // if opponent accepts undo request, Close the "waiting" pop-up, then undo, before finally passing the baton back to us
-                    if (UndoRequestSentModal.activeInHierarchy) {
-                        // don't accidentally undo too many times
-                        UndoRequestSentModal.SetActive(false);
-                        Undo();
-                        RenjuBoard.EndTurn();
-                    }
-                }
-                else if (mostRecentMove.Equals(GameConstants.UNDO_REQUEST_REJECTED))
-                {
-                    // if opponent rejects undo request, Close the "waiting" pop-up, and now it's simply our turn again
-                    if (UndoRequestSentModal.activeInHierarchy)
-                    {
-                        UndoRequestSentModal.SetActive(false);
-                        RenjuBoard.EndTurn();
-                    }
-                }
-                else
-                {
-                    RenjuBoard.AttemptToPlaceStone(mostRecentMove);
+                    UndoRequestReceivedModal.SetActive(true);
+                    RenjuBoard.EndTurn();
                 }
             }
-        }
+            else if (mostRecentMove.Equals(GameConstants.UNDO_REQUEST_ACCEPTED))
+            {
+                // if opponent accepts undo request, Close the "waiting" pop-up, then undo, before finally passing the baton back to us
+                if (UndoRequestSentModal.activeInHierarchy)
+                {
+                    // don't accidentally undo too many times
+                    UndoRequestSentModal.SetActive(false);
+                    Undo();
+                    RenjuBoard.EndTurn();
+                }
+            }
+            else if (mostRecentMove.Equals(GameConstants.UNDO_REQUEST_REJECTED))
+            {
+                // if opponent rejects undo request, Close the "waiting" pop-up, and now it's simply our turn again
+                if (UndoRequestSentModal.activeInHierarchy)
+                {
+                    UndoRequestSentModal.SetActive(false);
+                    RenjuBoard.EndTurn();
+                }
+            }
+            else
+            {
+                RenjuBoard.AttemptToPlaceStone(mostRecentMove);
+            }
+        });
     }
 
     public IEnumerator MakeMove(Point point)
@@ -117,14 +111,10 @@ public class OnlineMultiplayerClient : MonoBehaviour
         Debug.Log("making move with updated renjuboard.isblacksturn " + RenjuBoard.IsBlacksTurn);
         // notify server that we made a move, so server can then in turn notify the other player to make the next move
         string url = string.Format("{0}make-move?room={1}&player-number={2}&x={3}&y={4}", GameConfiguration.ServerUrl, OnlineRoomNumber, OnlinePlayerNumber, point.X, point.Y);
-        using (WWW www = new WWW(url))
+        return RestAPIUtil.GetRequest(url, (response) =>
         {
-            yield return www;
-            if (www.isDone)
-            {
-                Debug.Log("MakeMove to url: " + url);
-            }
-        }
+            Debug.Log("MakeMove to url: " + url);
+        });
     }
 
     private void Undo()

@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
 using UnityEngine.Networking;
+using Assets.Scripts.Online;
 
 public class OnlineRoomSelection : MonoBehaviour
 {
@@ -33,16 +34,12 @@ public class OnlineRoomSelection : MonoBehaviour
     private IEnumerator GetAndCacheServerURL() 
     {
         string url = "https://henrys-firebase-db.firebaseio.com/renju3d-server-ip.json";
-        using (UnityWebRequest www = UnityWebRequest.Get(url))
+        return RestAPIUtil.GetRequest(url, (response) =>
         {
-            yield return www.SendWebRequest();
-            if (www.isDone)
-            {
-                string serverUrl = JsonConvert.DeserializeObject<string>(www.downloadHandler.text);
-                Debug.Log("rest api get : " + www.downloadHandler.text + " serverUrl: " + serverUrl);
-                GameConfiguration.ServerUrl = serverUrl;
-            }
-        }
+            string serverUrl = JsonConvert.DeserializeObject<string>(response);
+            Debug.Log("rest api get : " + response + " serverUrl: " + serverUrl);
+            GameConfiguration.ServerUrl = serverUrl;
+        });
 
         // old native approach that doesn't work on WebGL build
         /*FirebaseDatabase.DefaultInstance.GetReference("renju3d-server-ip").GetValueAsync().ContinueWithOnMainThread(task =>
@@ -127,99 +124,86 @@ public class OnlineRoomSelection : MonoBehaviour
     IEnumerator RefreshLobby()
     {
         string url = GameConfiguration.ServerUrl + "refresh-lobby";
-        using (UnityWebRequest www = UnityWebRequest.Get(url))
+        return RestAPIUtil.GetRequest(url, (response) =>
         {
-            yield return www.SendWebRequest();
-            //MAJOR KEY, otherwise anything written here assumes www is null
-            //(spent hrs debugging this then realized I stumbled across this before)
-            if (www.isNetworkError || www.isHttpError)
+            RoomSummaries = JsonConvert.DeserializeObject<List<RoomSummary>>(response);
+
+            int currentRoomIndex = 0;
+            foreach (Transform roomTransform in RoomsGameObject.transform)
             {
-                Debug.Log(url + ", error: " + www.error);
-            }
-            else
-            {
-                //Debug.Log(www.downloadHandler.text);
-                RoomSummaries = JsonConvert.DeserializeObject<List<RoomSummary>>(www.downloadHandler.text);
-                
-                int currentRoomIndex = 0;
-                foreach (Transform roomTransform in RoomsGameObject.transform)
+                foreach (Transform t in roomTransform)
                 {
-                    foreach (Transform t in roomTransform)
+                    if (t.name == "BlackPlayerName")
                     {
-                        if (t.name == "BlackPlayerName")
-                        {
-                            t.GetComponent<Text>().text = RoomSummaries[currentRoomIndex].P1;
-                        }
-                        if (t.name == "WhitePlayerName")
-                        {
-                            t.GetComponent<Text>().text = RoomSummaries[currentRoomIndex].P2;
-                        }
+                        t.GetComponent<Text>().text = RoomSummaries[currentRoomIndex].P1;
                     }
-                    currentRoomIndex++;
+                    if (t.name == "WhitePlayerName")
+                    {
+                        t.GetComponent<Text>().text = RoomSummaries[currentRoomIndex].P2;
+                    }
                 }
+                currentRoomIndex++;
             }
-        }
+        });
     }
 
     IEnumerator RefreshRoom()
     {
-        using (WWW www = new WWW(GameConfiguration.ServerUrl + "refresh-room?room=" + OnlineMultiplayerClient.OnlineRoomNumber))
+        string url = GameConfiguration.ServerUrl + "refresh-room?room=" + OnlineMultiplayerClient.OnlineRoomNumber;
+        return RestAPIUtil.GetRequest(url, (response) =>
         {
-            yield return www;
-            if (www.isDone)
+            RoomSummary summary = JsonConvert.DeserializeObject<RoomSummary>(response);
+            Debug.Log("refreshing room " + OnlineMultiplayerClient.OnlineRoomNumber + " " + summary.ToString());
+
+            OnlineMultiplayerClient.OnlineRoomInfo.SetP1(summary.P1);
+            OnlineMultiplayerClient.OnlineRoomInfo.SetP2(summary.P2);
+            P1Label.text = summary.P1;
+            P2Label.text = summary.P2;
+
+            if (OnlineMultiplayerClient.OnlineRoomInfo.IsBothPlayersPresent())
             {
-                RoomSummary response = JsonConvert.DeserializeObject<RoomSummary>(www.text);
-                Debug.Log("refreshing room " + OnlineMultiplayerClient.OnlineRoomNumber + " " + response.ToString());
-
-                OnlineMultiplayerClient.OnlineRoomInfo.SetP1(response.P1);
-                OnlineMultiplayerClient.OnlineRoomInfo.SetP2(response.P2);
-                P1Label.text = response.P1;
-                P2Label.text = response.P2;
-
-                if (OnlineMultiplayerClient.OnlineRoomInfo.IsBothPlayersPresent())
-                {
-                    Debug.Log("both players are now present. playing sound");
-                    GameStartedSound.Play();
-                }
-
-                // rotate P1Label and P2Label if needed (actually, let's just don't rotate, and keep online UI the same as web)
-                /*if (GameConfiguration.IsAndroidGame)
-                {
-                    if (OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.One)
-                    {
-                        P1Label.transform.rotation = GameConstants.QuaternionTowardsBlack;
-                        P2Label.transform.rotation = GameConstants.QuaternionTowardsBlack;
-                    }
-                    else if (OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.Two)
-                    {
-                        P1Label.transform.rotation = GameConstants.QuaternionTowardsWhite;
-                        P2Label.transform.rotation = GameConstants.QuaternionTowardsWhite;
-                    } else
-                    {
-                        P1Label.transform.rotation = GameConstants.QuaternionTowardsBlack;
-                        P2Label.transform.rotation = GameConstants.QuaternionTowardsWhite;
-                    }
-                }*/
+                Debug.Log("both players are now present. playing sound");
+                GameStartedSound.Play();
             }
-        }
+
+            // rotate P1Label and P2Label if needed (actually, let's just don't rotate, and keep online UI the same as web)
+            /*if (GameConfiguration.IsAndroidGame)
+            {
+                if (OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.One)
+                {
+                    P1Label.transform.rotation = GameConstants.QuaternionTowardsBlack;
+                    P2Label.transform.rotation = GameConstants.QuaternionTowardsBlack;
+                }
+                else if (OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.Two)
+                {
+                    P1Label.transform.rotation = GameConstants.QuaternionTowardsWhite;
+                    P2Label.transform.rotation = GameConstants.QuaternionTowardsWhite;
+                } else
+                {
+                    P1Label.transform.rotation = GameConstants.QuaternionTowardsBlack;
+                    P2Label.transform.rotation = GameConstants.QuaternionTowardsWhite;
+                }
+            }*/
+        });
     }
 
     IEnumerator KeepAlive()
     {
-        using (WWW www = new WWW(GameConfiguration.ServerUrl + "keep-alive?room=" + OnlineMultiplayerClient.OnlineRoomNumber + "&player-number=" + OnlineMultiplayerClient.OnlinePlayerNumber))
+        string url = GameConfiguration.ServerUrl + "keep-alive?room=" + OnlineMultiplayerClient.OnlineRoomNumber + "&player-number=" + OnlineMultiplayerClient.OnlinePlayerNumber;
+        return RestAPIUtil.GetRequest(url, (response) =>
         {
-            yield return www;
-            if (www.isDone)
+            // Check if server gave us a -1 error code, meaning opponent disconnected / forfeit / ragequit
+            if (response == "-1")
             {
-                // Check if server gave us a -1 error code, meaning opponent disconnected / forfeit / ragequit
-                if (www.text == "-1")
-                {                    
-                    RenjuBoard.SetWinner(OnlineMultiplayerClient.OnlinePlayerNumber);
-                    RenjuBoard.WinMessage.GetComponent<TextMesh>().text = "The opponent has left. \nYou win!";
-                    OnlineMultiplayerClient.OnlinePlayerNumber = PlayerNumber.Neither; //prevent KeepAlive being called again
-                }
+                RenjuBoard.SetWinner(OnlineMultiplayerClient.OnlinePlayerNumber);
+                RenjuBoard.WinMessage.GetComponent<TextMesh>().text = "The opponent has left. \nYou win!";
+                OnlineMultiplayerClient.OnlinePlayerNumber = PlayerNumber.Neither; //prevent KeepAlive being called again
             }
-        }
+            else if (response == "1")
+            {
+                Debug.Log("keepAlive was acked by server");
+            }
+        });
     }
 
     private void OnJoinButtonPress(int roomNumber)
@@ -234,33 +218,29 @@ public class OnlineRoomSelection : MonoBehaviour
         {
             playerName = animals[(int)(Random.value * animals.Length)];
         }
-        using (WWW www = new WWW(GameConfiguration.ServerUrl + "join?room=" + roomNumber + "&name=" + playerName))
-        {
-            yield return www;
-            if (www.isDone)
+        string url = GameConfiguration.ServerUrl + "join?room=" + roomNumber + "&name=" + playerName;
+        return RestAPIUtil.GetRequest(url, (response) => {
+            Debug.Log("joined room" + roomNumber + " as player " + response + " name " + playerName);
+            if (response == "1")
             {
-                Debug.Log("joined room" + roomNumber + " as player " + www.text + " name " + playerName);
-                if (www.text == "1")
-                {
-                    OnlineMultiplayerClient.OnlinePlayerNumber = PlayerNumber.One;
-                    P1Label.text = playerName;
-                }
-                else if (www.text == "2")
-                {
-                    OnlineMultiplayerClient.OnlinePlayerNumber = PlayerNumber.Two;
-                    P2Label.text = playerName;
-                }
-                else
-                {
-                    // TODO: assume room is full, so we can only spectate
-                    //OnlineMultiplayerClient.OnlinePlayerNumber = PlayerNumber.Spectator;
-                    // P1Label and P2Label will be set when polling server for moves
-                }
-
-                OnlineMultiplayerClient.OnlineRoomNumber = roomNumber;
-                HideRoomSelectionUI();
+                OnlineMultiplayerClient.OnlinePlayerNumber = PlayerNumber.One;
+                P1Label.text = playerName;
             }
-        }
+            else if (response == "2")
+            {
+                OnlineMultiplayerClient.OnlinePlayerNumber = PlayerNumber.Two;
+                P2Label.text = playerName;
+            }
+            else
+            {
+                // TODO: assume room is full, so we can only spectate
+                //OnlineMultiplayerClient.OnlinePlayerNumber = PlayerNumber.Spectator;
+                // P1Label and P2Label will be set when polling server for moves
+            }
+
+            OnlineMultiplayerClient.OnlineRoomNumber = roomNumber;
+            HideRoomSelectionUI();
+        });
     }
 
     private void HideRoomSelectionUI()
