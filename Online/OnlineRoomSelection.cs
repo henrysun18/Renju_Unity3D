@@ -19,6 +19,7 @@ public class OnlineRoomSelection : MonoBehaviour
     public Text PlayerName;
     public TMP_Text P1Label;
     public TMP_Text P2Label;
+    public GameObject LeaveButton;
     public AudioSource GameStartedSound; // play this when both players are ready
 
     private static RenjuBoard RenjuBoard;
@@ -178,10 +179,12 @@ public class OnlineRoomSelection : MonoBehaviour
                 GameStartedSound.Play();
             }
 
-            // rotate P1Label and P2Label if needed (actually, let's just don't rotate, and keep online UI the same as web)
-            /*if (GameConfiguration.IsAndroidGame)
+            // rotate P1Label and P2Label towards black when on Android
+            if (GameConfiguration.IsAndroidGame)
             {
-                if (OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.One)
+                P1Label.transform.rotation = GameConstants.QuaternionTowardsBlack;
+                P2Label.transform.rotation = GameConstants.QuaternionTowardsBlack;
+                /*if (OnlineMultiplayerClient.OnlinePlayerNumber == PlayerNumber.One)
                 {
                     P1Label.transform.rotation = GameConstants.QuaternionTowardsBlack;
                     P2Label.transform.rotation = GameConstants.QuaternionTowardsBlack;
@@ -194,8 +197,8 @@ public class OnlineRoomSelection : MonoBehaviour
                 {
                     P1Label.transform.rotation = GameConstants.QuaternionTowardsBlack;
                     P2Label.transform.rotation = GameConstants.QuaternionTowardsWhite;
-                }
-            }*/
+                }*/
+            }
         });
     }
 
@@ -261,6 +264,7 @@ public class OnlineRoomSelection : MonoBehaviour
     {
         NameInputField.SetActive(false);
         RoomsGameObject.SetActive(false);
+        LeaveButton.SetActive(true); // show the Leave room button
     }
 
     public void ExitBackToLobby()
@@ -270,5 +274,6 @@ public class OnlineRoomSelection : MonoBehaviour
         PlayerName.text = "";
         P1Label.text = "";
         P2Label.text = "";
+        LeaveButton.SetActive(false); // hide the Leave room button
     }
 }

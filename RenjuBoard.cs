@@ -243,6 +243,12 @@ public class RenjuBoard : MonoBehaviour
     {
         IsGameOver = true;
 
+        // clean up pre-existing instance of WinMessage if for some reason it's still there
+        if (WinMessage != null)
+        {
+            Destroy(WinMessage);
+        }
+
         if (playerNumber == PlayerNumber.One)
         {
             WinMessage = BlackWinMessage;
@@ -266,16 +272,9 @@ public class RenjuBoard : MonoBehaviour
             }
         }
 
-        if (GameConfiguration.IsAndroidGame) //rotate towards winner if game is played in portrait mode
+        if (GameConfiguration.IsAndroidGame) //rotate upright relative to device
         {
-            if (playerNumber == PlayerNumber.One)
-            {
-                WinMessage = Instantiate(WinMessage, WinMessage.transform.position, GameConstants.QuaternionTowardsBlack);
-            }
-            else
-            {
-                WinMessage = Instantiate(WinMessage, WinMessage.transform.position, GameConstants.QuaternionTowardsWhite);
-            }
+            WinMessage = Instantiate(WinMessage, WinMessage.transform.position, GameConstants.QuaternionTowardsBlack);
         }
         else
         {
@@ -337,9 +336,9 @@ public class RenjuBoard : MonoBehaviour
 
     void InitializeUndoAndOfficePropsButtons()
     {
-        if (GameConfiguration.IsAndroidGame && !GameConfiguration.IsOnlineGame)
+        if (GameConfiguration.IsAndroidGame)
         {
-            // only show two undo buttons when we're palying offline on Android
+            // show two undo/respawn props buttons when we're Android
             SoloUndoButton.gameObject.SetActive(false);
             BlackUndoButton.gameObject.SetActive(true);
             WhiteUndoButton.gameObject.SetActive(true);
