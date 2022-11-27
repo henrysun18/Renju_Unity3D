@@ -9,6 +9,7 @@ using UnityEngine.UI;
 using Random = UnityEngine.Random;
 using UnityEngine.Networking;
 using Assets.Scripts.Online;
+using TMPro;
 
 public class OnlineRoomSelection : MonoBehaviour
 {
@@ -16,8 +17,8 @@ public class OnlineRoomSelection : MonoBehaviour
     public GameObject RoomsGameObject;
     public GameObject OnlineRoomsSelectionUI;
     public Text PlayerName;
-    public Text P1Label;
-    public Text P2Label;
+    public TMP_Text P1Label;
+    public TMP_Text P2Label;
     public AudioSource GameStartedSound; // play this when both players are ready
 
     private static RenjuBoard RenjuBoard;
@@ -70,7 +71,7 @@ public class OnlineRoomSelection : MonoBehaviour
 
             InvokeRepeating("RefreshLobbyIfNotInGame", 0.2f, 3f); //refresh every 3s
             InvokeRepeating("RefreshRoomIfWaitingForOpponent", 0.2f, 1f);
-            InvokeRepeating("KeepConnectionToServerAlive", 0.2f, 5f); //evict player if this is not called after a while
+            InvokeRepeating("KeepConnectionToServerAlive", 0.2f, 1f); //evict player if this is not called after a while
 
             foreach (Transform roomTransform in RoomsGameObject.transform)
             {
@@ -133,6 +134,17 @@ public class OnlineRoomSelection : MonoBehaviour
             {
                 foreach (Transform t in roomTransform)
                 {
+                    if (t.name == "JoinButton")
+                    {
+                        // TODO: let's disable the Join Room button when room is full, since spectate mode doesn't work yet
+                        if (RoomSummaries[currentRoomIndex].IsBothPlayersPresent())
+                        {
+                            t.GetComponent<Button>().interactable = false;
+                        } else
+                        {
+                            t.GetComponent<Button>().interactable = true;
+                        }
+                    }
                     if (t.name == "BlackPlayerName")
                     {
                         t.GetComponent<Text>().text = RoomSummaries[currentRoomIndex].P1;
@@ -233,9 +245,11 @@ public class OnlineRoomSelection : MonoBehaviour
             }
             else
             {
-                // TODO: assume room is full, so we can only spectate
+                // TODO: assume room is full, so we can only spectate. This is a fallback in case button disabling didn't work
                 //OnlineMultiplayerClient.OnlinePlayerNumber = PlayerNumber.Spectator;
                 // P1Label and P2Label will be set when polling server for moves
+                Debug.Log("Room " + roomNumber + " is full! Please join another room. Though this codepath should never have been hit in the first place");
+                return;
             }
 
             OnlineMultiplayerClient.OnlineRoomNumber = roomNumber;
